@@ -1,39 +1,90 @@
-import { NextResponse } from "next/server";
+import "server-only";
+
+import { rateLimit } from "@/lib/rateLimit";
+import { runMistralOcr } from "@/lib/mistralOcr";
+import {
+  MAX_UPLOAD_BYTES,
+  validateUpload,
+  type UploadValidationFailure,
+} from "@/lib/uploadValidation";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
-const MAX_BYTES = 10 * 1024 * 1024;
-const ALLOWED_MIME = new Set(["application/pdf", "image/jpeg", "image/png", "text/plain"]);
+function jsonError(status: number, message: string): Response {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
-export async function POST(request: Request) {
+function statusForFailure(reason: UploadValidationFailure): number {
+  if (reason === "too_large") return 413;
+  if (reason === "mime_not_allowed") return 415;
+  return 400;
+}
+
+function messageForFailure(reason: UploadValidationFailure): string {
+  switch (reason) {
+    case "empty":
+      return "Empty file";
+    case "too_large":
+      return "File too large";
+    case "mime_not_allowed":
+      return "Unsupported file type";
+    case "magic_mismatch":
+      return "File contents do not match declared type";
+  }
+}
+
+export async function POST(req: Request): Promise<Response> {
+  if (!rateLimit(req, "ocr", { capacity: 5, refillPerSec: 5 / 60 })) {
+    return jsonError(429, "Too many requests. Slow down.");
+  }
+
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) {
+    return jsonError(503, "OCR service not configured");
+  }
+
   let form: FormData;
   try {
-    form = await request.formData();
+    form = await req.formData();
   } catch {
-    return NextResponse.json({ error: "Invalid multipart payload" }, { status: 400 });
+    return jsonError(400, "Expected multipart/form-data");
   }
 
-  const file = form.get("file");
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "Missing file field" }, { status: 400 });
-  }
-  if (file.size <= 0) {
-    return NextResponse.json({ error: "Empty file" }, { status: 400 });
-  }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "File exceeds 10MB" }, { status: 413 });
-  }
-  if (!ALLOWED_MIME.has(file.type)) {
-    return NextResponse.json({ error: "Unsupported file type" }, { status: 415 });
+  const candidate = form.get("file");
+  if (!(candidate instanceof File)) {
+    return jsonError(400, "Missing 'file' field");
   }
 
-  // OCR provider integration is intentionally out of scope for this scaffold.
-  // This stub returns a deterministic placeholder so the upload → server flow
-  // can be smoke-tested end-to-end before wiring a real OCR backend.
-  return NextResponse.json({
-    filename: file.name,
-    sizeBytes: file.size,
-    parsedText: "[stub] OCR pipeline not yet wired. File received successfully.",
+  if (candidate.type !== "application/pdf") {
+    return jsonError(415, "OCR currently supports PDF only");
+  }
+
+  if (candidate.size > MAX_UPLOAD_BYTES) {
+    return jsonError(413, "File too large");
+  }
+
+  const bytes = new Uint8Array(await candidate.arrayBuffer());
+
+  const validation = validateUpload({
+    declaredMime: candidate.type,
+    sizeBytes: candidate.size,
+    head: bytes.slice(0, 16),
   });
+  if (!validation.ok) {
+    return jsonError(statusForFailure(validation.reason), messageForFailure(validation.reason));
+  }
+
+  const result = await runMistralOcr(bytes, apiKey);
+  if (!result.ok) {
+    return jsonError(result.status, result.reason);
+  }
+
+  return new Response(
+    JSON.stringify({ text: result.text, pages: result.pages, durationMs: result.durationMs }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
 }
