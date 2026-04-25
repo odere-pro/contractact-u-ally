@@ -42,13 +42,54 @@ Most workers — especially migrants — never learn what their contract actuall
 git clone https://github.com/odere-pro/contractact-u-ally.git
 cd contractact-u-ally
 npm install
-cp .env.example .env.local
-npm run dev
+cp .env.example .env.local   # fill in ANTHROPIC_API_KEY
+npm run dev                  # → http://localhost:3000
 ```
 
 Open <http://localhost:3000>, drop a PDF onto the upload zone, and click
 **Parse contract**. The request hits `/api/ocr` which today returns a
 placeholder — proof the upload pipeline is wired end-to-end.
+
+## How to run
+
+### Development
+
+```bash
+npm run dev          # start dev server with hot reload
+```
+
+### Quality gates (run before every push)
+
+```bash
+npm run check        # typecheck + lint + format check + token guard
+npm run test         # Vitest unit tests
+npm run test:e2e     # Playwright end-to-end tests (headless)
+npm run test:e2e:ui  # Playwright UI mode (interactive)
+npm run ship         # check + test + build — full pre-push gate
+```
+
+### Production build
+
+```bash
+npm run build        # production build (must pass before deploy)
+```
+
+### Auto-fix code style
+
+```bash
+npm run fix          # lint --fix + prettier format
+```
+
+### AI-assisted development
+
+```bash
+claude               # launch Claude Code — MCP servers, agents, and hooks activate automatically
+```
+
+First prompt: `Read CLAUDE.md. Then build the contract analysis results page using shadcn/ui.`
+
+See [`docs/guides/ai-first-development.md`](docs/guides/ai-first-development.md) for the full
+AI workflow: MCP servers, project agents, hooks, rules, and prompt recipes.
 
 ## Project layout
 
@@ -74,8 +115,9 @@ placeholder — proof the upload pipeline is wired end-to-end.
 ## Working in this repo
 
 - **For humans**: Read the relevant guide in [`docs/guides/`](docs/guides/)
-  before starting a task. Each guide is under 300 lines and focused on a
-  single surface (frontend, backend, UX/UI, demo, pitching).
+  before starting a task.
+  [`docs/guides/ai-first-development.md`](docs/guides/ai-first-development.md)
+  covers MCP servers, agents, hooks, rules, and the full workflow.
 - **For AI assistants**: Read [`CLAUDE.md`](CLAUDE.md). It defines the
   default agent routing, MCP servers, conventions, security rules, and
   reuse rules.
