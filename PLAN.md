@@ -449,51 +449,52 @@ Triggered from the footer of the results screen.
 
 ## Component contract (for build)
 
-| Component | Where | Owns |
-|---|---|---|
-| `ConsentDialog` | `/consent` | localStorage flag + cookie write |
-| `FakeAuthForm` | `/sign-in` | demo-mode auto-submit, cookie set |
-| `ProfileSwitcher` | App shell | active profile in React context |
-| `UploadDropzone` | `/app/upload` | PDF validation, `/api/ocr` POST |
-| `RecentContracts` | `/app/upload` | summary list w/ severity counts |
-| `ProcessingTimeline` | `/app/processing/:id` | server-sent progress events |
-| `RiskRail` | results | scroll-spy + filter + counts |
-| `PdfPane` | results | PDF.js render + highlight overlays |
-| `SeverityBadge` | shared | ▲ ◐ ◌ ✓ icon + label, a11y safe |
-| `SimplifiedPane` | results | per-risk cards keyed by profile |
-| `WhyDrawer` | results | citation + simplified rationale |
-| `LawModal` | results | original statute text |
-| `CompareView` | `/app/compare/:a/:b` | merged rail + dual PDF panes |
-| `ShareDialog` | results footer | link gen, scope picker |
-| `DownloadMenu` | results footer | TXT + PDF export |
-| `CriticalBanner` | results | shown only in worst-case scenario |
-| `HumanInTheLoopCTA` | results, critical only | legal-aid handoff stub |
+| Component            | Where                  | Owns                               |
+| -------------------- | ---------------------- | ---------------------------------- |
+| `ConsentDialog`      | `/consent`             | localStorage flag + cookie write   |
+| `FakeAuthForm`       | `/sign-in`             | demo-mode auto-submit, cookie set  |
+| `ProfileSwitcher`    | App shell              | active profile in React context    |
+| `UploadDropzone`     | `/app/upload`          | PDF validation, `/api/ocr` POST    |
+| `RecentContracts`    | `/app/upload`          | summary list w/ severity counts    |
+| `ProcessingTimeline` | `/app/processing/:id`  | server-sent progress events        |
+| `RiskRail`           | results                | scroll-spy + filter + counts       |
+| `PdfPane`            | results                | PDF.js render + highlight overlays |
+| `SeverityBadge`      | shared                 | ▲ ◐ ◌ ✓ icon + label, a11y safe    |
+| `SimplifiedPane`     | results                | per-risk cards keyed by profile    |
+| `WhyDrawer`          | results                | citation + simplified rationale    |
+| `LawModal`           | results                | original statute text              |
+| `CompareView`        | `/app/compare/:a/:b`   | merged rail + dual PDF panes       |
+| `ShareDialog`        | results footer         | link gen, scope picker             |
+| `DownloadMenu`       | results footer         | TXT + PDF export                   |
+| `CriticalBanner`     | results                | shown only in worst-case scenario  |
+| `HumanInTheLoopCTA`  | results, critical only | legal-aid handoff stub             |
 
 ---
 
 ## Critical files to modify / create
 
 - `src/app/(public)/page.tsx` — add CTA → `/consent`.
-- `src/app/consent/page.tsx` *(new)* — `ConsentDialog`.
-- `src/app/sign-in/page.tsx` *(new)* — `FakeAuthForm`.
-- `src/app/app/layout.tsx` *(new)* — App shell with `ProfileSwitcher`.
-- `src/app/app/upload/page.tsx` *(new)*.
-- `src/app/app/processing/[id]/page.tsx` *(new)*.
-- `src/app/app/contract/[id]/page.tsx` *(new)* — main results screen.
-- `src/app/app/compare/[a]/[b]/page.tsx` *(new)*.
-- `src/app/app/share/[token]/page.tsx` *(new)*.
-- `src/components/organisms/risk-rail/` *(new)*.
-- `src/components/organisms/pdf-pane/` *(new)*.
-- `src/components/organisms/simplified-pane/` *(new)*.
-- `src/components/organisms/why-drawer/` *(new)*.
-- `src/components/organisms/share-dialog/` *(new)*.
-- `src/components/atoms/severity-badge/` *(new)*.
-- `src/lib/consent.ts` *(new)* — read/write consent flags.
-- `src/lib/profile.ts` *(new)* — profile context + types.
-- `src/lib/fixtures/scenarios.ts` *(new)* — three demo result fixtures
+- `src/app/consent/page.tsx` _(new)_ — `ConsentDialog`.
+- `src/app/sign-in/page.tsx` _(new)_ — `FakeAuthForm`.
+- `src/app/app/layout.tsx` _(new)_ — App shell with `ProfileSwitcher`.
+- `src/app/app/upload/page.tsx` _(new)_.
+- `src/app/app/processing/[id]/page.tsx` _(new)_.
+- `src/app/app/contract/[id]/page.tsx` _(new)_ — main results screen.
+- `src/app/app/compare/[a]/[b]/page.tsx` _(new)_.
+- `src/app/app/share/[token]/page.tsx` _(new)_.
+- `src/components/organisms/risk-rail/` _(new)_.
+- `src/components/organisms/pdf-pane/` _(new)_.
+- `src/components/organisms/simplified-pane/` _(new)_.
+- `src/components/organisms/why-drawer/` _(new)_.
+- `src/components/organisms/share-dialog/` _(new)_.
+- `src/components/atoms/severity-badge/` _(new)_.
+- `src/lib/consent.ts` _(new)_ — read/write consent flags.
+- `src/lib/profile.ts` _(new)_ — profile context + types.
+- `src/lib/fixtures/scenarios.ts` _(new)_ — three demo result fixtures
   (best / medium / worst) so the UI works without a live analysis.
 
 Reuse:
+
 - `src/lib/uploadValidation.ts` (existing) — PDF size + MIME guard.
 - `src/components/ui/*` (shadcn) — Dialog, Drawer, Tabs, RadioGroup, Sheet,
   ScrollArea, Tooltip.
