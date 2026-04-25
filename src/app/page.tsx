@@ -43,11 +43,18 @@ export default function UploadPage() {
   // Owns the in-flight OCR fetch so picking a different file mid-upload
   // can cancel it cleanly instead of resolving onto stale state.
   const ocrAbortRef = useRef<AbortController | null>(null);
+  // Sentinel for the OCR → analyze handoff: if the page unmounts after
+  // OCR completes but before `await run(...)` fires, we must not start
+  // a new analyze fetch.
+  const mountedRef = useRef(true);
 
   // Tear down a pending OCR fetch on unmount so we don't leak a TCP
-  // connection or call setState after the page unmounts.
+  // connection or call setState after the page unmounts. Flip the
+  // mounted sentinel so submit() can short-circuit before run().
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       ocrAbortRef.current?.abort();
       ocrAbortRef.current = null;
     };
@@ -102,6 +109,7 @@ export default function UploadPage() {
       if (ocrAbortRef.current === controller) ocrAbortRef.current = null;
     }
 
+    if (!mountedRef.current) return;
     await run({ ocrText: ocr.text, jurisdiction: "nl" });
   }
 
@@ -109,12 +117,13 @@ export default function UploadPage() {
   const trackerProgress = ocrPhase === "uploading" ? 0.4 : analysis.stageProgress;
   const isWorking = ocrPhase === "uploading" || analysis.phase === "running";
   const showTracker = ocrPhase !== "idle";
-  const showError = ocrError ?? analysis.error;
+  const errorMessage = ocrError ?? analysis.error;
+  const showError = errorMessage !== null;
   const showFindings = analysis.clauses.length > 0 || analysis.summary !== null;
 
   // Compose the live-region message from current state. Errors have their
   // own role="alert" — skip duplicate announcement here.
-  const liveMessage = computeLiveMessage(ocrPhase, analysis, !!showError);
+  const liveMessage = computeLiveMessage(ocrPhase, analysis, showError);
 
   // On error → focus the Alert (which already has role="alert" so it
   // also self-announces). On done → focus the Findings card title so
@@ -171,7 +180,7 @@ export default function UploadPage() {
 
       {showError && (
         <Alert ref={alertRef} tabIndex={-1} variant="destructive" data-testid="analyze-error">
-          <AlertDescription>{showError}</AlertDescription>
+          <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
 
@@ -205,7 +214,12 @@ function computeTrackerStage(
   analysisStage: ReturnType<typeof useAnalysisStream>["state"]["stage"],
 ): TrackerStage {
   if (ocrPhase === "error") return "error:ocr";
-  if (analysisPhase === "error") return `error:${analysisStage ?? "classify"}`;
+  if (analysisPhase === "error") {
+    // No stage in flight = transport-level failure (request never
+    // reached a stage event). Bare "error" tells StageTracker to render
+    // the error chrome without blaming a specific stage.
+    return analysisStage ? `error:${analysisStage}` : "error";
+  }
   if (ocrPhase === "uploading") return "ocr";
   if (analysisPhase === "running") return analysisStage ?? "classify";
   if (analysisPhase === "done") return "done";

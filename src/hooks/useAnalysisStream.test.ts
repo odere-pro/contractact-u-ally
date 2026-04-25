@@ -121,10 +121,9 @@ describe("useAnalysisStream", () => {
   it("reset() aborts an in-flight fetch and returns state to idle", async () => {
     let abortSeen = false;
     vi.mocked(globalThis.fetch).mockImplementationOnce(async (_url, init) => {
-      const signal = (init as RequestInit | undefined)?.signal;
       // Resolve only once aborted, mimicking a stream that's still pending.
       return new Promise((_resolve, reject) => {
-        signal?.addEventListener("abort", () => {
+        init?.signal?.addEventListener("abort", () => {
           abortSeen = true;
           reject(new DOMException("aborted", "AbortError"));
         });
@@ -145,6 +144,53 @@ describe("useAnalysisStream", () => {
     await waitFor(() => expect(abortSeen).toBe(true));
     expect(result.current.state.phase).toBe("idle");
     expect(result.current.state.clauses).toEqual([]);
+  });
+
+  it("a fresh run() after reset() works (no poisoned abortRef)", async () => {
+    // First run: pending, gets cancelled by reset().
+    vi.mocked(globalThis.fetch).mockImplementationOnce(async (_url, init) => {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      });
+    });
+    // Second run: completes normally.
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      ndjsonStream([
+        JSON.stringify({
+          type: "summary",
+          jurisdiction: "nl",
+          contractType: "nl-indefinite",
+          detectedLanguage: "en",
+          totalClauses: 0,
+          illegalCount: 0,
+          exploitativeCount: 0,
+          permitConflictCount: 0,
+          uncheckedCount: 0,
+          compliantCount: 0,
+        }),
+      ]),
+    );
+
+    const { result } = renderHook(() => useAnalysisStream());
+
+    act(() => {
+      void result.current.run({ ocrText: "a".repeat(300) });
+    });
+    await waitFor(() => expect(result.current.state.phase).toBe("running"));
+
+    act(() => {
+      result.current.reset();
+    });
+    await waitFor(() => expect(result.current.state.phase).toBe("idle"));
+
+    await act(async () => {
+      await result.current.run({ ocrText: "b".repeat(300) });
+    });
+
+    expect(result.current.state.phase).toBe("done");
+    expect(result.current.state.summary?.totalClauses).toBe(0);
   });
 
   it("surfaces transport errors via state.error without crashing", async () => {

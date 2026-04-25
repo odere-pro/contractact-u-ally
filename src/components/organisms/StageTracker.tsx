@@ -41,7 +41,11 @@ function parseTrackerStage(s: TrackerStage): {
   isDone: boolean;
 } {
   if (s === "done") return { active: null, isError: false, isDone: true };
-  if (s === "error") return { active: STAGE_ORDER[0] ?? null, isError: true, isDone: false };
+  // Bare "error" = transport-level failure with no stage in flight
+  // (e.g. /api/analyze never reached). Render the error chrome but
+  // mark no stage as the failure point — it's misleading to blame OCR
+  // when nothing was ever attempted.
+  if (s === "error") return { active: null, isError: true, isDone: false };
   if (isStageId(s)) return { active: s, isError: false, isDone: false };
   // Remaining variants: `error:${StageId}`. Use string ops, not template
   // narrowing — TS doesn't narrow startsWith() return values.

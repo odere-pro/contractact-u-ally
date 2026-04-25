@@ -50,8 +50,11 @@ const STATUS_ICON: Record<ClauseStatus, ComponentType<{ className?: string }>> =
 };
 
 // Defence-in-depth: BE prompt caps originalText at 300 chars, but we
-// never trust the network. A malformed or oversized payload is
-// truncated at render so it can't blow up the layout.
+// never trust the network. The render cap is intentionally 2× the
+// backend cap — keeps a comfortable safety margin so legitimate edge
+// cases (slightly-over-cap prompts) still render cleanly while still
+// bounding the layout against an oversized/malformed payload. Do NOT
+// halve this without raising the backend cap first.
 const MAX_ORIGINAL_TEXT_RENDER = 600;
 function truncate(text: string): string {
   return text.length > MAX_ORIGINAL_TEXT_RENDER
