@@ -1,5 +1,7 @@
 import "server-only";
 
+import { z } from "zod";
+
 const MISTRAL_OCR_URL = "https://api.mistral.ai/v1/ocr";
 const MISTRAL_OCR_MODEL = "mistral-ocr-latest";
 
@@ -11,13 +13,18 @@ export type MistralOcrResult =
   | { ok: true; text: string; pages: number; durationMs: number }
   | { ok: false; status: 502 | 422; reason: string };
 
-interface MistralPage {
-  readonly markdown?: string;
-}
-
-interface MistralResponse {
-  readonly pages?: readonly MistralPage[];
-}
+// Validates the Mistral OCR response shape. If Mistral renames `markdown`
+// or returns a different envelope, safeParse fails with a 502 instead of
+// silently returning empty text.
+const mistralResponseSchema = z.object({
+  pages: z
+    .array(
+      z.object({
+        markdown: z.string().optional(),
+      }),
+    )
+    .optional(),
+});
 
 /**
  * Run Mistral OCR on PDF bytes and return concatenated markdown text.
@@ -67,8 +74,11 @@ export async function runMistralOcr(
     return { ok: false, status: 502, reason: "OCR service returned invalid JSON" };
   }
 
-  const parsed = raw as MistralResponse;
-  const pages = parsed.pages ?? [];
+  const parsed = mistralResponseSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, status: 502, reason: "OCR service returned unexpected shape" };
+  }
+  const pages = parsed.data.pages ?? [];
   const text = pages
     .map((p) => (p.markdown ?? "").trim())
     .filter(Boolean)

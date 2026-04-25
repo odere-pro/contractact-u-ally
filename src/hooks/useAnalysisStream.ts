@@ -1,7 +1,14 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 
+import {
+  clauseEventSchema,
+  errorEventSchema,
+  stageEventSchema,
+  summaryEventSchema,
+} from "@/lib/catalog/schemas";
 import type { AnalyzeStage, ClauseEvent, Jurisdiction, SummaryEvent } from "@/lib/catalog/types";
 
 export type AnalysisPhase = "idle" | "running" | "done" | "error";
@@ -30,108 +37,143 @@ interface RunArgs {
   readonly typeId?: string;
 }
 
-type ServerEvent =
-  | { type: "stage"; stage: AnalyzeStage; progress: number }
-  | (ClauseEvent & { type: "clause" })
-  | (SummaryEvent & { type: "summary" })
-  | { type: "error"; message: string };
+// Discriminated union of every NDJSON event the server may emit. Every
+// line received from /api/analyze is parsed through this schema; any line
+// that fails to validate is silently dropped (defence against schema drift
+// and against an attacker-controlled proxy injecting bogus JSON).
+const serverEventSchema = z.discriminatedUnion("type", [
+  stageEventSchema,
+  clauseEventSchema,
+  summaryEventSchema,
+  errorEventSchema,
+]);
+type ServerEvent = z.infer<typeof serverEventSchema>;
 
-/**
- * Drive the /api/analyze NDJSON stream.
- *
- * Caller invokes `run({ ocrText })` and renders against the returned state.
- * State updates immutably as `stage`, `clause`, `summary`, and `error`
- * events arrive. Calling `reset()` clears state for a new contract.
- */
 export function useAnalysisStream() {
   const [state, setState] = useState<AnalysisState>(INITIAL);
   const abortRef = useRef<AbortController | null>(null);
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
+  const mountedRef = useRef(true);
 
-  const reset = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setState(INITIAL);
+  // Tear down any in-flight fetch + reader on unmount so we don't leak
+  // a TCP connection and don't fire setState on an unmounted component.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+      readerRef.current?.cancel().catch(() => {});
+      abortRef.current = null;
+      readerRef.current = null;
+    };
   }, []);
 
-  const run = useCallback(async (args: RunArgs): Promise<void> => {
+  const safeSetState = useCallback((updater: (prev: AnalysisState) => AnalysisState): void => {
+    if (!mountedRef.current) return;
+    setState(updater);
+  }, []);
+
+  const reset = useCallback((): void => {
     abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    readerRef.current?.cancel().catch(() => {});
+    abortRef.current = null;
+    readerRef.current = null;
+    safeSetState(() => INITIAL);
+  }, [safeSetState]);
 
-    setState({ ...INITIAL, phase: "running" });
+  const run = useCallback(
+    async (args: RunArgs): Promise<void> => {
+      // Cancel any in-flight call before starting a new one.
+      abortRef.current?.abort();
+      readerRef.current?.cancel().catch(() => {});
+      const controller = new AbortController();
+      abortRef.current = controller;
+      readerRef.current = null;
 
-    let response: Response;
-    try {
-      response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(args),
-        signal: controller.signal,
-      });
-    } catch (err: unknown) {
-      if (controller.signal.aborted) return;
-      setState((s) => ({
-        ...s,
-        phase: "error",
-        error: err instanceof Error ? err.message : "Network error",
-      }));
-      return;
-    }
+      safeSetState(() => ({ ...INITIAL, phase: "running" }));
 
-    if (!response.ok) {
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
-      setState((s) => ({
-        ...s,
-        phase: "error",
-        error: body.error ?? `Analyze request failed (${response.status})`,
-      }));
-      return;
-    }
-
-    const body = response.body;
-    if (!body) {
-      setState((s) => ({ ...s, phase: "error", error: "Empty response stream" }));
-      return;
-    }
-
-    const reader = body.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
-
-    try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          handleLine(line);
-        }
-      }
-      if (buf.trim()) handleLine(buf);
-      setState((s) => (s.phase === "error" ? s : { ...s, phase: "done" }));
-    } catch (err: unknown) {
-      if (controller.signal.aborted) return;
-      setState((s) => ({
-        ...s,
-        phase: "error",
-        error: err instanceof Error ? err.message : "Stream read failed",
-      }));
-    }
-
-    function handleLine(raw: string): void {
-      const trimmed = raw.trim();
-      if (!trimmed) return;
-      let event: ServerEvent;
+      let response: Response;
       try {
-        event = JSON.parse(trimmed) as ServerEvent;
-      } catch {
+        response = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(args),
+          signal: controller.signal,
+        });
+      } catch (err: unknown) {
+        if (controller.signal.aborted) return;
+        safeSetState((s) => ({
+          ...s,
+          phase: "error",
+          error: err instanceof Error ? err.message : "Network error",
+        }));
         return;
       }
-      setState((prev) => applyEvent(prev, event));
-    }
-  }, []);
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        safeSetState((s) => ({
+          ...s,
+          phase: "error",
+          error: body.error ?? `Analyze request failed (${response.status})`,
+        }));
+        return;
+      }
+
+      const body = response.body;
+      if (!body) {
+        safeSetState((s) => ({ ...s, phase: "error", error: "Empty response stream" }));
+        return;
+      }
+
+      const reader = body.getReader();
+      readerRef.current = reader;
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() ?? "";
+          for (const line of lines) {
+            handleLine(line);
+          }
+        }
+        if (buf.trim()) handleLine(buf);
+        safeSetState((s) => (s.phase === "error" ? s : { ...s, phase: "done" }));
+      } catch (err: unknown) {
+        if (controller.signal.aborted) return;
+        safeSetState((s) => ({
+          ...s,
+          phase: "error",
+          error: err instanceof Error ? err.message : "Stream read failed",
+        }));
+      } finally {
+        if (readerRef.current === reader) readerRef.current = null;
+      }
+
+      function handleLine(raw: string): void {
+        const trimmed = raw.trim();
+        if (!trimmed) return;
+
+        let candidate: unknown;
+        try {
+          candidate = JSON.parse(trimmed);
+        } catch {
+          return;
+        }
+
+        const parsed = serverEventSchema.safeParse(candidate);
+        if (!parsed.success) return;
+
+        safeSetState((prev) => applyEvent(prev, parsed.data));
+      }
+    },
+    [safeSetState],
+  );
 
   return { state, run, reset } as const;
 }
@@ -146,5 +188,11 @@ function applyEvent(prev: AnalysisState, event: ServerEvent): AnalysisState {
       return { ...prev, summary: event };
     case "error":
       return { ...prev, phase: "error", error: event.message };
+    default:
+      return assertUnreachable(event);
   }
+}
+
+function assertUnreachable(x: never): never {
+  throw new Error(`Unhandled server event variant: ${JSON.stringify(x)}`);
 }

@@ -141,6 +141,24 @@ describe("POST /api/ocr", () => {
     expect(res.status).toBe(422);
   });
 
+  it("returns 502 when Mistral returns an unexpected envelope shape", async () => {
+    // Schema drift — `pages` is a string instead of an array. Previously
+    // the unsafe `as MistralResponse` cast let this through and silently
+    // returned 422 with no diagnostic. Zod safeParse now surfaces it as 502.
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ pages: "not-an-array" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const fd = new FormData();
+    fd.append("file", makePdfFile());
+    const res = await POST(makeRequest(fd));
+    expect(res.status).toBe(502);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("OCR service returned unexpected shape");
+  });
+
   it("returns 429 once the rate-limit bucket is empty", async () => {
     // mockImplementation, not mockResolvedValue — Response bodies can only
     // be read once, so each call must produce a fresh Response.

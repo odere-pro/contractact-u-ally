@@ -91,26 +91,38 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
-      const enqueue = (chunk: Uint8Array): void => controller.enqueue(chunk);
+      // The consumer can disconnect at any moment (browser tab closed,
+      // useAnalysisStream aborted, etc.). After that, controller.enqueue
+      // throws TypeError; we must not propagate that as a pipeline error.
+      // Track local liveness so a single guarded enqueue covers all paths.
+      let alive = true;
+      const safeEnqueue = (chunk: Uint8Array): void => {
+        if (!alive) return;
+        try {
+          controller.enqueue(chunk);
+        } catch {
+          alive = false;
+        }
+      };
 
       try {
         // Stage 1: classify
-        enqueue(encodeStage("classify", 0));
+        safeEnqueue(encodeStage("classify", 0));
         const classifyResult: ClassifyResult = opts.typeId
           ? { typeId: opts.typeId, confidence: 1, jurisdiction: opts.jurisdiction ?? "nl" }
           : await classifyContract(opts.ocrText, opts.jurisdiction);
-        enqueue(encodeStage("classify", 1));
+        safeEnqueue(encodeStage("classify", 1));
 
         // Stage 2: load rules
-        enqueue(encodeStage("load_rules", 0));
+        safeEnqueue(encodeStage("load_rules", 0));
         const [ruleSet, riskExamples]: [LoadedRuleSet, string] = await Promise.all([
           loadRulesForType(classifyResult.typeId, classifyResult.jurisdiction),
           loadRiskExamples(),
         ]);
-        enqueue(encodeStage("load_rules", 1));
+        safeEnqueue(encodeStage("load_rules", 1));
 
         // Stage 3: analyze (streaming)
-        enqueue(encodeStage("analyze", 0));
+        safeEnqueue(encodeStage("analyze", 0));
         const systemPrompt = buildAnalysisSystemPrompt(ruleSet, riskExamples);
 
         let buffer = "";
@@ -118,26 +130,57 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
           systemPrompt,
           userMessage: `Analyze this contract:\n\n${opts.ocrText}`,
         })) {
+          if (!alive) break;
           buffer += delta;
           // NDJSON: split on newlines, emit complete lines, keep the tail.
           const lines = buffer.split("\n");
           buffer = lines.pop() ?? "";
           for (const line of lines) {
             const out = validateAndEncodeLine(line);
-            if (out) enqueue(out);
+            if (out) safeEnqueue(out);
           }
         }
         // Flush trailing fragment, if any.
-        if (buffer.trim()) {
+        if (alive && buffer.trim()) {
           const out = validateAndEncodeLine(buffer);
-          if (out) enqueue(out);
+          if (out) safeEnqueue(out);
         }
+
+        if (alive) controller.close();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Analysis failed";
-        enqueue(encodeError(message));
-      } finally {
-        controller.close();
+        // We deliberately keep error reporting in-band as a {type:"error"}
+        // event because the HTTP status is already 200 once headers flush —
+        // controller.error() would surface to the client as a network
+        // failure with no recoverable message. The UI hook reads the event
+        // and transitions to phase=error. Sanitize the message so internal
+        // paths / SDK internals don't leak.
+        const message = sanitizeErrorMessage(err);
+        safeEnqueue(encodeError(message));
+        if (alive) {
+          try {
+            controller.close();
+          } catch {
+            // Already closed by safeEnqueue catch path — nothing to do.
+          }
+        }
       }
     },
   });
+}
+
+/**
+ * Produce a client-safe error message. Filesystem paths from `ENOENT`,
+ * SDK internals, and stack fragments must not reach the browser; map
+ * known categories to fixed strings, log the raw error server-side.
+ */
+function sanitizeErrorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    const raw = err.message;
+    console.error("runRiskPipeline failure:", err);
+    if (raw.includes("ENOENT") || raw.includes("/")) return "Internal pipeline error";
+    if (raw.length > 200) return "Internal pipeline error";
+    return raw;
+  }
+  console.error("runRiskPipeline failure (non-Error):", err);
+  return "Analysis failed";
 }
