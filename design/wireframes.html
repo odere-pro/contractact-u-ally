@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>contractact-u-ally — wireframes</title>
+<style>
+  :root {
+    --bg: oklch(98% 0.005 250);
+    --surface: oklch(100% 0 0);
+    --surface-2: oklch(96% 0.01 250);
+    --border: oklch(88% 0.01 250);
+    --border-strong: oklch(72% 0.01 250);
+    --text: oklch(22% 0.01 250);
+    --text-2: oklch(48% 0.01 250);
+    --text-3: oklch(62% 0.01 250);
+    --accent: oklch(55% 0.18 255);
+    --accent-soft: oklch(94% 0.04 255);
+    --crit: oklch(58% 0.22 25);
+    --crit-soft: oklch(94% 0.06 25);
+    --med: oklch(72% 0.16 70);
+    --med-soft: oklch(95% 0.06 80);
+    --low: oklch(72% 0.10 220);
+    --low-soft: oklch(95% 0.03 220);
+    --ok: oklch(62% 0.14 150);
+    --ok-soft: oklch(94% 0.05 150);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 2px oklch(0% 0 0 / 0.04), 0 8px 24px oklch(0% 0 0 / 0.06);
+    --mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background:
+      radial-gradient(circle at 20% 0%, oklch(96% 0.04 255) 0%, transparent 40%),
+      radial-gradient(circle at 80% 100%, oklch(96% 0.03 25) 0%, transparent 40%),
+      var(--bg);
+    background-attachment: fixed;
+    line-height: 1.5;
+    font-size: 14px;
+  }
+
+  /* ==== Page chrome ==== */
+  .gallery-header {
+    padding: 48px 32px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .gallery-header h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  .gallery-header p {
+    margin: 0;
+    color: var(--text-2);
+    max-width: 780px;
+  }
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 18px;
+  }
+  .toc a {
+    text-decoration: none;
+    color: var(--text-2);
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12px;
+    background: var(--surface-2);
+  }
+  .toc a:hover { color: var(--accent); border-color: var(--accent); }
+
+  .frames {
+    display: grid;
+    gap: 56px;
+    padding: 48px 32px 96px;
+    max-width: 1480px;
+    margin: 0 auto;
+  }
+
+  .frame {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .frame > .frame-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  }
+  .frame-head h2 {
+    margin: 0;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+  .frame-head .id {
+    font-family: var(--mono);
+    color: var(--text-3);
+    font-size: 12px;
+  }
+  .frame-body { padding: 22px; }
+  .frame-note {
+    padding: 12px 22px 22px;
+    color: var(--text-2);
+    font-size: 13px;
+    border-top: 1px dashed var(--border);
+    background: var(--surface-2);
+  }
+
+  /* ==== Mock browser ==== */
+  .browser {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: oklch(80% 0.04 25); }
+  .dot.y { background: oklch(82% 0.13 90); }
+  .dot.g { background: oklch(72% 0.14 150); }
+  .url {
+    flex: 1;
+    margin-left: 8px;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-2);
+  }
+
+  /* ==== App shell (top nav) ==== */
+  .app-shell { background: var(--surface); }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .brand-glyph {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), oklch(55% 0.18 280));
+    display: grid; place-items: center;
+    color: white; font-size: 14px;
+  }
+  .nav-links {
+    display: flex; gap: 4px; margin-left: 10px;
+  }
+  .nav-links a {
+    padding: 6px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-2);
+    font-size: 13px;
+  }
+  .nav-links a.active { color: var(--text); background: var(--surface-2); }
+  .nav-spacer { flex: 1; }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, oklch(80% 0.10 30), oklch(70% 0.14 320));
+  }
+
+  /* Profile switcher */
+  .profile-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 22px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  .profile-pills { display: flex; gap: 6px; }
+  .pill {
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--text-2);
+    cursor: default;
+  }
+  .pill.active {
+    background: var(--text);
+    color: var(--surface);
+    border-color: var(--text);
+  }
+
+  /* ==== Severity tokens ==== */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .badge.crit { color: var(--crit); background: var(--crit-soft); border-color: oklch(82% 0.10 25); }
+  .badge.med  { color: oklch(45% 0.12 70); background: var(--med-soft); border-color: oklch(82% 0.10 80); }
+  .badge.low  { color: oklch(40% 0.08 220); background: var(--low-soft); border-color: oklch(82% 0.06 220); }
+  .badge.ok   { color: oklch(38% 0.10 150); background: var(--ok-soft); border-color: oklch(80% 0.08 150); }
+
+  .glyph { font-family: var(--mono); font-weight: 700; }
+
+  /* ==== Buttons ==== */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: default;
+  }
+  .btn.primary {
+    background: var(--text);
+    color: var(--surface);
+    border-color: var(--text);
+  }
+  .btn.danger {
+    background: var(--crit);
+    color: white;
+    border-color: var(--crit);
+  }
+  .btn.ghost { background: transparent; }
+  .btn.sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ==== 1. Consent ==== */
+  .consent-page {
+    height: 520px;
+    background:
+      linear-gradient(180deg, oklch(96% 0.04 255) 0%, oklch(98% 0.01 255) 100%);
+    position: relative;
+    display: grid; place-items: center;
+  }
+  .consent-bg {
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 26px, oklch(0% 0 0 / 0.04) 26px 27px);
+    opacity: 0.4;
+  }
+  .modal {
+    position: relative;
+    width: min(520px, 92%);
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px oklch(0% 0 0 / 0.18);
+    overflow: hidden;
+  }
+  .modal-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-head h3 { margin: 0; font-size: 16px; }
+  .modal-body { padding: 22px; }
+  .modal-foot {
+    padding: 16px 22px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px; justify-content: flex-end;
+    background: var(--surface-2);
+  }
+  .check-list { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 10px; }
+  .check-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; }
+  .checkbox {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: 1.5px solid var(--border-strong);
+    flex-shrink: 0; margin-top: 2px;
+    display: grid; place-items: center;
+  }
+  .checkbox.on {
+    background: var(--text); border-color: var(--text);
+    color: white; font-size: 11px;
+  }
+  .checkbox.locked { background: var(--surface-2); }
+  .check-list .meta { display: block; font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  /* ==== 2. Auth ==== */
+  .auth-page {
+    height: 520px;
+    display: grid; place-items: center;
+    background: var(--surface);
+  }
+  .auth-card {
+    width: min(380px, 92%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .auth-card h3 { margin: 0 0 18px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .field { display: grid; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 12px; color: var(--text-2); }
+  .input {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    background: var(--surface-2);
+    font-size: 13px;
+    color: var(--text-3);
+    font-family: var(--mono);
+  }
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text-3); font-size: 11px;
+    margin: 14px 0;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .oauth-row { display: flex; gap: 8px; }
+  .oauth-row .btn { flex: 1; justify-content: center; }
+  .demo-hint {
+    margin-top: 14px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: oklch(40% 0.12 255);
+    font-size: 11px;
+  }
+
+  /* ==== 4. Upload ==== */
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 18px;
+    padding: 22px;
+  }
+  .dropzone {
+    border: 2px dashed var(--border-strong);
+    border-radius: 14px;
+    padding: 48px 24px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 50% 0%, var(--accent-soft) 0%, transparent 70%),
+      var(--surface);
+  }
+  .dropzone .arrow {
+    font-size: 36px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .dropzone h4 { margin: 4px 0 4px; font-size: 16px; }
+  .dropzone .hint { color: var(--text-3); font-size: 12px; margin-bottom: 18px; }
+
+  .recent-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    background: var(--surface);
+  }
+  .recent-card h4 { margin: 0 0 12px; font-size: 13px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; }
+  .recent-row {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+  }
+  .recent-row:first-of-type { border-top: 0; }
+  .recent-row .file { font-size: 13px; font-weight: 500; }
+  .recent-row .meta {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    font-size: 11px; color: var(--text-2); margin-top: 4px;
+  }
+  .file-icon {
+    width: 24px; height: 28px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, oklch(96% 0.02 255), oklch(90% 0.04 255));
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    font-size: 9px; color: var(--text-2);
+  }
+
+  /* ==== 5. Processing ==== */
+  .processing {
+    padding: 56px 22px;
+    display: grid; place-items: center;
+  }
+  .processing-card {
+    width: min(520px, 100%);
+    text-align: left;
+  }
+  .progress-track {
+    height: 6px; border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+    margin: 14px 0 22px;
+  }
+  .progress-fill {
+    width: 68%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), oklch(60% 0.20 220));
+    border-radius: 3px;
+  }
+  .step-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .step-list li { display: flex; gap: 10px; align-items: center; font-size: 13px; }
+  .step-glyph {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 11px; font-family: var(--mono);
+    color: white;
+  }
+  .step-glyph.done { background: var(--ok); }
+  .step-glyph.now  { background: var(--accent); animation: pulse 1.4s infinite ease-in-out; }
+  .step-glyph.next { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-3); }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 oklch(55% 0.18 255 / 0.5); }
+    50% { box-shadow: 0 0 0 6px oklch(55% 0.18 255 / 0); }
+  }
+  .processing .hint {
+    margin-top: 18px; font-size: 12px; color: var(--text-3);
+  }
+
+  /* ==== 6. Results main ==== */
+  .results {
+    display: grid;
+    grid-template-columns: 240px 1fr 380px;
+    min-height: 640px;
+    background: var(--surface-2);
+  }
+  .pane {
+    background: var(--surface);
+  }
+  .rail {
+    border-right: 1px solid var(--border);
+    padding: 16px 14px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .rail-section h5 {
+    margin: 0 0 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+  .summary-counts { display: grid; gap: 6px; }
+  .summary-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--surface-2);
+  }
+  .summary-row .count { margin-left: auto; font-weight: 600; }
+
+  .risk-list { display: grid; gap: 2px; }
+  .risk-item {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    align-items: center;
+    cursor: default;
+  }
+  .risk-item:hover { background: var(--surface-2); }
+  .risk-item.active {
+    background: var(--accent-soft);
+    color: oklch(35% 0.12 255);
+    font-weight: 600;
+  }
+  .risk-item .sec { color: var(--text-3); font-family: var(--mono); font-size: 11px; }
+  .risk-glyph {
+    display: grid; place-items: center;
+    width: 16px; height: 16px; border-radius: 4px;
+    font-family: var(--mono); font-weight: 700;
+    font-size: 10px;
+  }
+  .risk-glyph.crit { background: var(--crit-soft); color: var(--crit); }
+  .risk-glyph.med  { background: var(--med-soft); color: oklch(45% 0.14 70); }
+  .risk-glyph.low  { background: var(--low-soft); color: oklch(40% 0.10 220); }
+  .risk-glyph.ok   { background: var(--ok-soft); color: oklch(38% 0.10 150); }
+
+  .filters { display: grid; gap: 6px; font-size: 12px; }
+  .filters label { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+  .filters input { accent-color: var(--accent); }
+
+  /* PDF pane */
+  .pdf {
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 30%);
+  }
+  .pdf-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  .pdf-toolbar .spacer { flex: 1; }
+  .pdf-page {
+    margin: 18px auto;
+    width: min(420px, 92%);
+    aspect-ratio: 8.5 / 11;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 18px oklch(0% 0 0 / 0.08);
+    padding: 28px 30px;
+    font-size: 9px;
+    color: var(--text-2);
+    line-height: 1.5;
+    position: relative;
+    overflow: hidden;
+  }
+  .pdf-page h6 {
+    margin: 14px 0 4px;
+    font-size: 10px;
+    color: var(--text);
+    font-weight: 700;
+  }
+  .pdf-page h6:first-child { margin-top: 0; }
+  .lorem-line { height: 4px; background: oklch(94% 0.005 250); border-radius: 2px; margin: 4px 0; }
+  .lorem-line.short { width: 60%; }
+  .lorem-line.med   { width: 80%; }
+  .highlight {
+    display: inline-block;
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin: 1px 0;
+    position: relative;
+  }
+  .highlight.crit { background: oklch(88% 0.12 25 / 0.55); border-bottom: 2px solid var(--crit); }
+  .highlight.med  { background: oklch(92% 0.13 80 / 0.6); border-bottom: 2px solid var(--med); }
+  .highlight.low  { background: oklch(92% 0.07 220 / 0.6); border-bottom: 2px solid var(--low); }
+  .gutter-flag {
+    position: absolute; left: -6px;
+    width: 4px; border-radius: 2px;
+  }
+
+  .pdf-pager {
+    display: flex; gap: 4px; justify-content: center;
+    padding: 8px 0 16px;
+    font-size: 11px; color: var(--text-3);
+  }
+  .pdf-pager .pg {
+    padding: 2px 8px; border-radius: 4px;
+    font-family: var(--mono);
+  }
+  .pdf-pager .pg.now { background: var(--text); color: white; }
+
+  /* Simplified pane */
+  .simplified {
+    padding: 18px;
+    display: flex; flex-direction: column; gap: 14px;
+    overflow-y: auto;
+    background: linear-gradient(180deg, oklch(99% 0.005 255) 0%, var(--surface) 100%);
+  }
+  .simplified .head-meta {
+    font-size: 11px; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .risk-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--surface);
+  }
+  .risk-card.featured {
+    border-color: oklch(82% 0.10 25);
+    background: linear-gradient(180deg, var(--crit-soft) 0%, var(--surface) 60%);
+  }
+  .risk-card.featured.med {
+    border-color: oklch(82% 0.10 80);
+    background: linear-gradient(180deg, var(--med-soft) 0%, var(--surface) 60%);
+  }
+  .risk-card h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .risk-card p { margin: 8px 0; font-size: 13px; color: var(--text); }
+  .risk-card .sub { color: var(--text-2); }
+  .risk-card .actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .risk-card.collapsed {
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .risk-card.collapsed .chev { margin-left: auto; color: var(--text-3); }
+
+  .hitl {
+    margin: 6px 0;
+    border: 1px solid oklch(80% 0.06 30);
+    background: linear-gradient(180deg, oklch(96% 0.05 30) 0%, var(--surface) 80%);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .hitl h5 { margin: 0 0 6px; font-size: 13px; color: var(--crit); }
+  .hitl p { margin: 0 0 12px; font-size: 12px; color: var(--text-2); }
+  .hitl .actions { display: flex; gap: 8px; }
+
+  .results-foot {
+    padding: 12px 22px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px;
+    background: var(--surface);
+  }
+  .results-foot .spacer { flex: 1; }
+
+  /* Variants for scenarios */
+  .scenario-good .pdf-page .highlight { display: none; }
+  .scenario-good .all-clear {
+    border: 1px solid oklch(80% 0.10 150);
+    background: linear-gradient(180deg, var(--ok-soft) 0%, var(--surface) 70%);
+    padding: 18px;
+    border-radius: 12px;
+    text-align: left;
+  }
+  .scenario-good .all-clear h4 { margin: 0 0 6px; font-size: 16px; color: oklch(38% 0.12 150); }
+
+  /* Mini compact scenario layout */
+  .results.compact { grid-template-columns: 200px 1fr 320px; min-height: 480px; }
+
+  /* ==== 8. Why drawer ==== */
+  .why-stage {
+    position: relative;
+    height: 480px;
+    overflow: hidden;
+    background: var(--surface-2);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .why-base {
+    position: absolute; inset: 0;
+    padding: 22px;
+    background: var(--surface);
+  }
+  .why-drawer {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 56%;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: -16px 0 40px oklch(0% 0 0 / 0.12);
+    padding: 22px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .why-drawer h4 { margin: 0; font-size: 15px; }
+  .why-drawer .source-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    font-size: 12px;
+  }
+  .why-drawer .source-card .sm-link { color: var(--accent); margin-right: 8px; font-size: 12px; }
+  .why-drawer .reading-toggle {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: auto;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    font-size: 12px;
+  }
+
+  /* ==== 9. Compare ==== */
+  .compare-bar {
+    display: flex; gap: 10px; align-items: center;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+  }
+  .compare-bar select, .compare-bar .selectish {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    font-size: 12px;
+    color: var(--text);
+  }
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 240px 1fr 1fr;
+    min-height: 540px;
+  }
+  .compare-grid .pdf {
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 30%);
+  }
+  .diff-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 30px 1fr;
+    gap: 8px; align-items: center;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .diff-row .arr { text-align: center; color: var(--text-3); }
+
+  /* ==== 10. Share ==== */
+  .share-stage {
+    height: 460px;
+    display: grid; place-items: center;
+    background:
+      radial-gradient(circle at 50% 30%, oklch(95% 0.04 255) 0%, transparent 60%),
+      var(--surface-2);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .share-modal {
+    width: min(440px, 92%);
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px oklch(0% 0 0 / 0.16);
+    overflow: hidden;
+  }
+  .radio-list { display: grid; gap: 8px; padding: 10px 0; }
+  .radio-list label {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: default;
+  }
+  .radio-list label.on {
+    border-color: var(--text);
+    background: var(--surface-2);
+  }
+  .radio-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid var(--border-strong);
+    flex-shrink: 0;
+    display: grid; place-items: center;
+  }
+  .radio-dot.on::after {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--text);
+  }
+  .share-row {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 8px 0;
+  }
+  .warning {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: oklch(96% 0.06 30);
+    color: oklch(40% 0.16 30);
+    font-size: 12px;
+    border: 1px solid oklch(85% 0.08 30);
+  }
+
+  /* ==== TXT preview ==== */
+  .txt-preview {
+    background: oklch(18% 0.01 250);
+    color: oklch(92% 0.01 250);
+    padding: 18px;
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+  .txt-preview .key { color: oklch(78% 0.14 80); }
+  .txt-preview .crit { color: oklch(72% 0.18 25); }
+
+  /* Utility */
+  .row { display: flex; align-items: center; gap: 10px; }
+  .grow { flex: 1; }
+  .center { text-align: center; }
+</style>
+</head>
+<body>
+
+<header class="gallery-header">
+  <h1>contractact-u-ally — wireframes</h1>
+  <p>End-to-end demo flow: consent → fake auth → upload → processing → results (3 scenarios) → why drawer → compare → share. Severity uses icon + label + color so it survives grayscale and color-blind users.</p>
+  <nav class="toc">
+    <a href="#f1">1 · Consent</a>
+    <a href="#f2">2 · Sign in</a>
+    <a href="#f3">3 · App shell</a>
+    <a href="#f4">4 · Upload</a>
+    <a href="#f5">5 · Processing</a>
+    <a href="#f6">6 · Results · main</a>
+    <a href="#f7a">7a · All clear</a>
+    <a href="#f7b">7b · Medium</a>
+    <a href="#f7c">7c · Critical</a>
+    <a href="#f8">8 · Why drawer</a>
+    <a href="#f9">9 · Compare</a>
+    <a href="#f10">10 · Share</a>
+    <a href="#f11">11 · TXT export</a>
+  </nav>
+</header>
+
+<main class="frames">
+
+  <!-- ==================== 1. CONSENT ==================== -->
+  <section class="frame" id="f1">
+    <div class="frame-head">
+      <h2>1 · Consent window</h2>
+      <span class="id">/consent</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/consent</span>
+      </div>
+      <div class="consent-page">
+        <div class="consent-bg"></div>
+        <div class="modal">
+          <div class="modal-head">
+            <h3>Before we read your contract</h3>
+            <span style="color: var(--text-3);">✕</span>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0 0 6px; color: var(--text-2); font-size: 13px;">Your PDF is sensitive. We need your consent to:</p>
+            <ul class="check-list">
+              <li>
+                <span class="checkbox on locked">✓</span>
+                <div><strong>Process the document to detect risks</strong><span class="meta">required · cannot be unchecked</span></div>
+              </li>
+              <li>
+                <span class="checkbox on locked">✓</span>
+                <div><strong>Store an encrypted copy for 30 days</strong><span class="meta">required · auto-deletes after</span></div>
+              </li>
+              <li>
+                <span class="checkbox"></span>
+                <div>Use anonymized excerpts to improve the model<span class="meta">optional</span></div>
+              </li>
+              <li>
+                <span class="checkbox"></span>
+                <div>Send me product updates<span class="meta">optional</span></div>
+              </li>
+            </ul>
+            <p style="font-size: 12px; color: var(--text-3); margin: 6px 0 0;">Read the <a href="#" style="color: var(--accent);">Privacy Notice ↗</a> · <a href="#" style="color: var(--accent);">Cookie Policy ↗</a></p>
+          </div>
+          <div class="modal-foot">
+            <span class="btn ghost">Decline</span>
+            <span class="btn primary">Accept →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-note"><strong>Behavior</strong> · Decline → public landing. Accept → write <code>consent_v1</code> to localStorage + httpOnly cookie, route to <code>/sign-in</code>.</div>
+  </section>
+
+  <!-- ==================== 2. AUTH ==================== -->
+  <section class="frame" id="f2">
+    <div class="frame-head">
+      <h2>2 · Fake authorization</h2>
+      <span class="id">/sign-in</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/sign-in</span>
+      </div>
+      <div class="app-shell">
+        <div class="nav">
+          <div class="brand"><div class="brand-glyph">▣</div> contractact-u-ally</div>
+          <div class="nav-spacer"></div>
+          <span class="btn ghost sm">Help</span>
+        </div>
+        <div class="auth-page">
+          <div class="auth-card">
+            <h3>🔒 Sign in</h3>
+            <div class="field">
+              <label>Email</label>
+              <div class="input">you@example.com</div>
+            </div>
+            <span class="btn primary" style="width: 100%; justify-content: center;">Send magic link</span>
+            <div class="divider">or continue with</div>
+            <div class="oauth-row">
+              <span class="btn">Google</span>
+              <span class="btn">Apple</span>
+            </div>
+            <div class="demo-hint">ⓘ Demo mode — any email signs you in.</div>
+          </div>
+        </div>
+        <div style="padding: 14px 22px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-3); text-align: center;">
+          Why we ask: contracts contain salary, address, and ID data. Auth keeps documents tied to you alone.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 3. APP SHELL ==================== -->
+  <section class="frame" id="f3">
+    <div class="frame-head">
+      <h2>3 · App shell</h2>
+      <span class="id">layout · /app/*</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/app/upload</span>
+      </div>
+      <div class="app-shell">
+        <div class="nav">
+          <div class="brand"><div class="brand-glyph">▣</div> contractact-u-ally</div>
+          <div class="nav-links">
+            <a href="#" class="active">Upload</a>
+            <a href="#">My contracts</a>
+            <a href="#">Compare</a>
+          </div>
+          <div class="nav-spacer"></div>
+          <span class="btn sm ghost">⌥ Help</span>
+          <div class="avatar"></div>
+        </div>
+        <div class="profile-bar">
+          <span>Demo profile <em style="color: var(--text-3);">(changes simplification only)</em></span>
+          <div class="profile-pills">
+            <span class="pill active">● Migrant Worker</span>
+            <span class="pill">Student</span>
+            <span class="pill">Senior Pro</span>
+            <span class="pill">Legal Counsel</span>
+          </div>
+        </div>
+        <div style="padding: 60px 22px; text-align: center; color: var(--text-3); font-size: 13px;">
+          ── page content varies per route ──
+        </div>
+      </div>
+    </div>
+    <div class="frame-note"><strong>Profile pills</strong> · RadioGroup. Switching never re-uploads or re-runs OCR — just re-renders the right pane + drawer.</div>
+  </section>
+
+  <!-- ==================== 4. UPLOAD ==================== -->
+  <section class="frame" id="f4">
+    <div class="frame-head">
+      <h2>4 · Upload</h2>
+      <span class="id">/app/upload</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/app/upload</span>
+      </div>
+      <div class="app-shell">
+        <div class="nav">
+          <div class="brand"><div class="brand-glyph">▣</div> contractact-u-ally</div>
+          <div class="nav-links">
+            <a href="#" class="active">Upload</a>
+            <a href="#">My contracts</a>
+            <a href="#">Compare</a>
+          </div>
+          <div class="nav-spacer"></div>
+          <div class="avatar"></div>
+        </div>
+        <div class="profile-bar">
+          <span>Demo profile</span>
+          <div class="profile-pills">
+            <span class="pill active">● Migrant Worker</span>
+            <span class="pill">Student</span>
+            <span class="pill">Senior Pro</span>
+            <span class="pill">Legal Counsel</span>
+          </div>
+        </div>
+        <div class="upload-grid">
+          <div class="dropzone">
+            <div class="arrow">⇪</div>
+            <h4>Drop your PDF here</h4>
+            <div class="hint">Max 25 MB · PDF only</div>
+            <span class="btn primary">Choose file</span>
+            <p style="margin-top: 22px; color: var(--text-3); font-size: 11px;">ⓘ We never share your document with third parties.</p>
+          </div>
+          <div class="recent-card">
+            <h4>Recent contracts</h4>
+            <div class="recent-row">
+              <div class="file-icon">PDF</div>
+              <div>
+                <div class="file">NL-2025-Probation.pdf</div>
+                <div class="meta">
+                  <span class="badge crit"><span class="glyph">▲</span> 1 critical</span>
+                  <span class="badge med"><span class="glyph">◐</span> 2 medium</span>
+                  <span style="color: var(--text-3); margin-left: auto;">2d ago</span>
+                </div>
+              </div>
+            </div>
+            <div class="recent-row">
+              <div class="file-icon">PDF</div>
+              <div>
+                <div class="file">SE-NonCompete.pdf</div>
+                <div class="meta">
+                  <span class="badge ok"><span class="glyph">✓</span> no critical</span>
+                  <span style="color: var(--text-3); margin-left: auto;">7d ago</span>
+                </div>
+              </div>
+            </div>
+            <div class="recent-row">
+              <div class="file-icon">PDF</div>
+              <div>
+                <div class="file">Freelance-DE.pdf</div>
+                <div class="meta">
+                  <span class="badge med"><span class="glyph">◐</span> 3 medium</span>
+                  <span class="badge low"><span class="glyph">◌</span> 1 low</span>
+                  <span style="color: var(--text-3); margin-left: auto;">31d ago</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 14px;">
+              <span class="btn sm">Compare two contracts →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 5. PROCESSING ==================== -->
+  <section class="frame" id="f5">
+    <div class="frame-head">
+      <h2>5 · Processing</h2>
+      <span class="id">/app/processing/:id</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/app/processing/abc123</span>
+      </div>
+      <div class="app-shell">
+        <div class="nav">
+          <div class="brand"><div class="brand-glyph">▣</div> contractact-u-ally</div>
+          <div class="nav-spacer"></div>
+          <div class="avatar"></div>
+        </div>
+        <div class="processing">
+          <div class="processing-card">
+            <h3 style="margin: 0; font-size: 16px;">Reading <code style="font-family: var(--mono);">NL-2025-Probation.pdf</code> …</h3>
+            <div class="progress-track"><div class="progress-fill"></div></div>
+            <div style="font-size: 12px; color: var(--text-3); margin-top: -14px; margin-bottom: 16px;">68% · roughly 12 seconds remaining</div>
+            <ul class="step-list">
+              <li><span class="step-glyph done">✓</span> OCR complete (8 pages, 4,212 words)</li>
+              <li><span class="step-glyph done">✓</span> Clause segmentation</li>
+              <li><span class="step-glyph now">●</span> Cross-checking against Dutch labor law…</li>
+              <li><span class="step-glyph next">○</span> Drafting plain-language summary</li>
+            </ul>
+            <p class="hint">ⓘ This usually takes 20–40 seconds. You can leave this tab open — we'll notify you.</p>
+            <div style="margin-top: 18px;"><span class="btn">Cancel</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 6. RESULTS MAIN ==================== -->
+  <section class="frame" id="f6">
+    <div class="frame-head">
+      <h2>6 · Results — main screen</h2>
+      <span class="id">/app/contract/:id</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/app/contract/abc123</span>
+      </div>
+      <div class="app-shell">
+        <div class="nav">
+          <div class="brand"><div class="brand-glyph">▣</div> contractact-u-ally</div>
+          <div class="nav-links">
+            <a href="#">Upload</a>
+            <a href="#" class="active">My contracts</a>
+            <a href="#">Compare</a>
+          </div>
+          <div class="nav-spacer"></div>
+          <div class="avatar"></div>
+        </div>
+        <div class="profile-bar">
+          <span>Profile lens</span>
+          <div class="profile-pills">
+            <span class="pill active">● Migrant Worker</span>
+            <span class="pill">Student</span>
+            <span class="pill">Senior Pro</span>
+            <span class="pill">Legal Counsel</span>
+          </div>
+          <div style="margin-left: auto; font-size: 12px; color: var(--text-3);">NL-2025-Probation.pdf · 8 pages</div>
+        </div>
+
+        <div class="results">
+          <!-- RAIL -->
+          <aside class="pane rail">
+            <div class="rail-section">
+              <h5>Summary</h5>
+              <div class="summary-counts">
+                <div class="summary-row"><span class="risk-glyph crit">▲</span> Critical <span class="count">1</span></div>
+                <div class="summary-row"><span class="risk-glyph med">◐</span> Medium <span class="count">2</span></div>
+                <div class="summary-row"><span class="risk-glyph low">◌</span> Low <span class="count">3</span></div>
+                <div class="summary-row"><span class="risk-glyph ok">✓</span> OK <span class="count">12</span></div>
+              </div>
+            </div>
+            <div class="rail-section">
+              <h5>Jump to</h5>
+              <div class="risk-list">
+                <div class="risk-item active"><span class="risk-glyph crit">▲</span><div><span class="sec">§4.2</span> · Probation</div></div>
+                <div class="risk-item"><span class="risk-glyph med">◐</span><div><span class="sec">§6</span> · Non-compete</div></div>
+                <div class="risk-item"><span class="risk-glyph med">◐</span><div><span class="sec">§8</span> · Overtime</div></div>
+                <div class="risk-item"><span class="risk-glyph low">◌</span><div><span class="sec">§11</span> · Notice</div></div>
+                <div class="risk-item"><span class="risk-glyph low">◌</span><div><span class="sec">§13</span> · Travel</div></div>
+                <div class="risk-item"><span class="risk-glyph low">◌</span><div><span class="sec">§15</span> · Equipment</div></div>
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§1–3</span> · Standard</div></div>
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§5</span> · Wages</div></div>
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§9</span> · Leave</div></div>
+              </div>
+            </div>
+            <div class="rail-section">
+              <h5>Filter</h5>
+              <div class="filters">
+                <label><input type="checkbox" checked /> Critical</label>
+                <label><input type="checkbox" checked /> Medium</label>
+                <label><input type="checkbox" checked /> Low</label>
+                <label><input type="checkbox" /> OK</label>
+              </div>
+            </div>
+          </aside>
+
+          <!-- PDF -->
+          <section class="pane pdf">
+            <div class="pdf-toolbar">
+              <span>Page <strong style="color: var(--text);">3</strong> / 8</span>
+              <span class="spacer"></span>
+              <span class="btn sm ghost">−</span>
+              <span class="btn sm ghost">▭</span>
+              <span class="btn sm ghost">+</span>
+              <span style="width: 1px; height: 14px; background: var(--border); margin: 0 4px;"></span>
+              <span class="btn sm ghost">⤓</span>
+            </div>
+            <div class="pdf-page">
+              <h6>§4.2 Probation period</h6>
+              <div class="lorem-line"></div>
+              <div class="lorem-line med"></div>
+              <p style="margin: 6px 0; font-size: 9px;">The probation period shall be <span class="highlight crit">9 (nine) months from the start of employment, during which either party may terminate without notice.</span></p>
+              <div class="lorem-line short"></div>
+              <h6>§6 Non-compete</h6>
+              <div class="lorem-line"></div>
+              <p style="margin: 6px 0; font-size: 9px;">The Employee shall not, for a period of <span class="highlight med">six (6) months following termination, engage in similar work within 100 km.</span></p>
+              <h6>§8 Overtime</h6>
+              <p style="margin: 6px 0; font-size: 9px;">All hours worked beyond standard <span class="highlight med">40h/week shall not be separately compensated and are deemed included in the salary.</span></p>
+              <div class="lorem-line med"></div>
+              <h6>§11 Notice</h6>
+              <p style="margin: 6px 0; font-size: 9px;">Standard notice of <span class="highlight low">one (1) month</span> applies after probation.</p>
+              <div class="lorem-line short"></div>
+            </div>
+            <div class="pdf-pager">
+              <span>◀</span>
+              <span class="pg">1</span>
+              <span class="pg">2</span>
+              <span class="pg now">3</span>
+              <span class="pg">4</span>
+              <span class="pg">5</span>
+              <span class="pg">6</span>
+              <span class="pg">7</span>
+              <span class="pg">8</span>
+              <span>▶</span>
+            </div>
+          </section>
+
+          <!-- SIMPLIFIED -->
+          <aside class="pane simplified">
+            <div class="head-meta">For you · Migrant Worker</div>
+            <div class="risk-card featured">
+              <h4><span class="badge crit"><span class="glyph">▲</span> Critical</span> §4.2 · Probation period</h4>
+              <p>Your contract sets a <strong>9-month probation</strong>. Dutch law caps this at <strong>2 months</strong> for a 1-year contract. Anything longer is <strong>NOT enforceable</strong>.</p>
+              <p class="sub"><strong>What to do</strong></p>
+              <ul style="margin: 4px 0 6px 18px; padding: 0; font-size: 13px; color: var(--text-2);">
+                <li>Ask for it to be reduced to 2 months in writing.</li>
+                <li>If signed, the cap still applies — you can leave without notice after month 2.</li>
+              </ul>
+              <div class="actions">
+                <span class="btn sm">ⓘ Why is this a risk?</span>
+                <span class="btn sm">📄 Show law (BW 7:652)</span>
+              </div>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph med">◐</span>
+              <span style="font-size: 13px;"><strong>§6</strong> · Non-compete</span>
+              <span class="chev">▾</span>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph med">◐</span>
+              <span style="font-size: 13px;"><strong>§8</strong> · Overtime</span>
+              <span class="chev">▾</span>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph low">◌</span>
+              <span style="font-size: 13px;"><strong>§11</strong> · Notice period</span>
+              <span class="chev">▾</span>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph low">◌</span>
+              <span style="font-size: 13px;"><strong>§13</strong> · Travel</span>
+              <span class="chev">▾</span>
+            </div>
+          </aside>
+        </div>
+        <div class="results-foot">
+          <span class="btn">⤓ Download simplified (PDF)</span>
+          <span class="btn">⤓ Download contract + notes (TXT)</span>
+          <span class="spacer"></span>
+          <span class="btn primary">🔗 Share</span>
+        </div>
+      </div>
+    </div>
+    <div class="frame-note"><strong>Sync</strong> · Clicking any rail row scrolls both panes to the same clause and updates <code>aria-current="true"</code>.</div>
+  </section>
+
+  <!-- ==================== 7a. ALL CLEAR ==================== -->
+  <section class="frame" id="f7a">
+    <div class="frame-head">
+      <h2>7a · Best case · all clear</h2>
+      <span class="id">scenario: good</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/app/contract/best</span>
+      </div>
+      <div class="app-shell">
+        <div class="profile-bar">
+          <span>Profile</span>
+          <div class="profile-pills">
+            <span class="pill active">● Migrant Worker</span>
+            <span class="pill">Student</span>
+            <span class="pill">Senior Pro</span>
+            <span class="pill">Legal Counsel</span>
+          </div>
+        </div>
+        <div class="results compact scenario-good">
+          <aside class="pane rail">
+            <div class="rail-section">
+              <h5>Summary</h5>
+              <div class="summary-counts">
+                <div class="summary-row"><span class="risk-glyph ok">✓</span> No risks <span class="count">0</span></div>
+                <div class="summary-row"><span class="risk-glyph ok">✓</span> Clauses checked <span class="count">18</span></div>
+              </div>
+            </div>
+            <div class="rail-section">
+              <h5>All clauses OK</h5>
+              <div class="risk-list">
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§1</span> · Parties</div></div>
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§4</span> · Probation</div></div>
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§5</span> · Wages</div></div>
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§6</span> · Non-compete</div></div>
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§8</span> · Overtime</div></div>
+                <div class="risk-item"><span class="risk-glyph ok">✓</span><div><span class="sec">§11</span> · Notice</div></div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="pane pdf">
+            <div class="pdf-toolbar"><span>Page <strong style="color: var(--text);">2</strong> / 8</span><span class="spacer"></span><span style="font-size:11px;">No highlights · this contract is clean.</span></div>
+            <div class="pdf-page">
+              <h6>§4 Probation period</h6>
+              <div class="lorem-line"></div><div class="lorem-line med"></div><div class="lorem-line short"></div>
+              <h6>§5 Wages</h6>
+              <div class="lorem-line"></div><div class="lorem-line short"></div>
+              <h6>§6 Non-compete</h6>
+              <div class="lorem-line med"></div><div class="lorem-line"></div><div class="lorem-line short"></div>
+              <h6>§8 Overtime</h6>
+              <div class="lorem-line"></div><div class="lorem-line short"></div>
+            </div>
+          </section>
+
+          <aside class="pane simplified">
+            <div class="head-meta">For you · Migrant Worker</div>
+            <div class="all-clear">
+              <h4>✅ All clear</h4>
+              <p style="margin: 0 0 8px; font-size: 13px;">We compared every clause to Dutch labor law. Nothing in this contract requires your attention.</p>
+              <p style="margin: 0; font-size: 13px; color: oklch(38% 0.10 150);"><strong>You can sign with confidence.</strong></p>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph ok">✓</span>
+              <span style="font-size: 13px;"><strong>§4</strong> · Probation — within 2-month cap</span>
+              <span class="chev">▾</span>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph ok">✓</span>
+              <span style="font-size: 13px;"><strong>§5</strong> · Wages — above minimum</span>
+              <span class="chev">▾</span>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph ok">✓</span>
+              <span style="font-size: 13px;"><strong>§6</strong> · Non-compete — within scope</span>
+              <span class="chev">▾</span>
+            </div>
+            <div style="margin-top: 8px;"><span class="btn">⤓ Save report</span></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 7b. MEDIUM ==================== -->
+  <section class="frame" id="f7b">
+    <div class="frame-head">
+      <h2>7b · Medium case · informational</h2>
+      <span class="id">scenario: medium</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/app/contract/medium</span>
+      </div>
+      <div class="app-shell">
+        <div class="profile-bar">
+          <span>Profile</span>
+          <div class="profile-pills">
+            <span class="pill active">● Migrant Worker</span>
+            <span class="pill">Student</span>
+            <span class="pill">Senior Pro</span>
+            <span class="pill">Legal Counsel</span>
+          </div>
+        </div>
+        <div class="results compact">
+          <aside class="pane rail">
+            <div class="rail-section">
+              <h5>Summary</h5>
+              <div class="summary-counts">
+                <div class="summary-row"><span class="risk-glyph med">◐</span> Medium <span class="count">2</span></div>
+                <div class="summary-row"><span class="risk-glyph low">◌</span> Low <span class="count">1</span></div>
+                <div class="summary-row"><span class="risk-glyph ok">✓</span> OK <span class="count">15</span></div>
+              </div>
+            </div>
+            <div class="rail-section">
+              <h5>Jump to</h5>
+              <div class="risk-list">
+                <div class="risk-item active"><span class="risk-glyph med">◐</span><div><span class="sec">§6</span> · Non-compete</div></div>
+                <div class="risk-item"><span class="risk-glyph med">◐</span><div><span class="sec">§11</span> · Notice</div></div>
+                <div class="risk-item"><span class="risk-glyph low">◌</span><div><span class="sec">§13</span> · Travel</div></div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="pane pdf">
+            <div class="pdf-toolbar"><span>Page <strong style="color: var(--text);">4</strong> / 8</span><span class="spacer"></span><span style="font-size:11px;">2 medium · 1 low</span></div>
+            <div class="pdf-page">
+              <h6>§6 Non-compete</h6>
+              <p style="margin: 6px 0; font-size: 9px;">A non-compete period of <span class="highlight med">six (6) months in the same metropolitan area</span> shall apply.</p>
+              <h6>§11 Notice</h6>
+              <p style="margin: 6px 0; font-size: 9px;">Notice of <span class="highlight med">three (3) months from employee, one month from employer</span>.</p>
+              <h6>§13 Travel</h6>
+              <p style="margin: 6px 0; font-size: 9px;">Employee may be required to <span class="highlight low">travel up to 30 days per year at company expense</span>.</p>
+              <div class="lorem-line"></div><div class="lorem-line short"></div>
+            </div>
+          </section>
+
+          <aside class="pane simplified">
+            <div class="head-meta">For you · Migrant Worker</div>
+            <div class="risk-card featured med">
+              <h4><span class="badge med"><span class="glyph">◐</span> Medium</span> Worth reviewing</h4>
+              <p>Two clauses are unusual but legal. You can accept them, or ask to soften them.</p>
+            </div>
+            <div class="risk-card">
+              <h4><span class="risk-glyph med">◐</span> §6 · Non-compete</h4>
+              <p>6 months · same metro area. Legal in NL but on the longer end. Negotiable.</p>
+              <div class="actions">
+                <span class="btn sm">ⓘ Why?</span>
+                <span class="btn sm">📄 Law</span>
+              </div>
+            </div>
+            <div class="risk-card">
+              <h4><span class="risk-glyph med">◐</span> §11 · Notice asymmetry</h4>
+              <p>Your notice is 3 months but theirs is 1. Common, but you can ask for parity.</p>
+              <div class="actions">
+                <span class="btn sm">ⓘ Why?</span>
+              </div>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph low">◌</span>
+              <span style="font-size: 13px;"><strong>§13</strong> · Travel</span>
+              <span class="chev">▾</span>
+            </div>
+            <span class="btn">Explore each →</span>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 7c. CRITICAL ==================== -->
+  <section class="frame" id="f7c">
+    <div class="frame-head">
+      <h2>7c · Worst case · critical · human-in-the-loop</h2>
+      <span class="id">scenario: worst</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/app/contract/worst</span>
+      </div>
+      <div class="app-shell">
+        <div style="background: var(--crit); color: white; padding: 10px 22px; font-size: 13px; display: flex; align-items: center; gap: 10px;">
+          <strong style="font-family: var(--mono);">▲ STOP</strong>
+          This contract has <strong>1 critical finding</strong> that violates Dutch labor law.
+          A human review is recommended before you sign.
+          <span style="margin-left: auto;"><span class="btn sm" style="background: white; color: var(--crit); border-color: white;">Connect me to legal aid →</span></span>
+        </div>
+        <div class="profile-bar">
+          <span>Profile</span>
+          <div class="profile-pills">
+            <span class="pill active">● Migrant Worker</span>
+            <span class="pill">Student</span>
+            <span class="pill">Senior Pro</span>
+            <span class="pill">Legal Counsel</span>
+          </div>
+        </div>
+        <div class="results compact">
+          <aside class="pane rail">
+            <div class="rail-section">
+              <h5>Summary</h5>
+              <div class="summary-counts">
+                <div class="summary-row" style="background: var(--crit-soft);"><span class="risk-glyph crit">▲</span> Critical <span class="count">1</span></div>
+                <div class="summary-row"><span class="risk-glyph med">◐</span> Medium <span class="count">2</span></div>
+                <div class="summary-row"><span class="risk-glyph low">◌</span> Low <span class="count">3</span></div>
+              </div>
+            </div>
+            <div class="rail-section">
+              <h5>Jump to</h5>
+              <div class="risk-list">
+                <div class="risk-item active"><span class="risk-glyph crit">▲</span><div><span class="sec">§4.2</span> · Probation</div></div>
+                <div class="risk-item"><span class="risk-glyph med">◐</span><div><span class="sec">§6</span> · Non-compete</div></div>
+                <div class="risk-item"><span class="risk-glyph med">◐</span><div><span class="sec">§8</span> · Overtime</div></div>
+                <div class="risk-item"><span class="risk-glyph low">◌</span><div><span class="sec">§11</span> · Notice</div></div>
+                <div class="risk-item"><span class="risk-glyph low">◌</span><div><span class="sec">§13</span> · Travel</div></div>
+                <div class="risk-item"><span class="risk-glyph low">◌</span><div><span class="sec">§15</span> · Equipment</div></div>
+              </div>
+            </div>
+            <div style="margin-top: auto; font-size: 11px; color: var(--text-3); padding: 10px; border-top: 1px dashed var(--border);">
+              ⚠ A human review is recommended.
+            </div>
+          </aside>
+
+          <section class="pane pdf">
+            <div class="pdf-toolbar"><span>Page <strong style="color: var(--text);">3</strong> / 8</span><span class="spacer"></span><span style="font-size:11px; color: var(--crit);">▲ critical clause on this page</span></div>
+            <div class="pdf-page">
+              <h6>§4.2 Probation period</h6>
+              <p style="margin: 6px 0; font-size: 9px;">The probation shall be <span class="highlight crit">9 (nine) months from start, during which either party may terminate without notice.</span></p>
+              <h6>§6 Non-compete</h6>
+              <p style="margin: 6px 0; font-size: 9px;"><span class="highlight med">6-month non-compete in the same region.</span></p>
+              <h6>§8 Overtime</h6>
+              <p style="margin: 6px 0; font-size: 9px;"><span class="highlight med">Overtime is unpaid and included in salary.</span></p>
+              <div class="lorem-line"></div><div class="lorem-line short"></div>
+            </div>
+          </section>
+
+          <aside class="pane simplified">
+            <div class="head-meta">For you · Migrant Worker</div>
+            <div class="risk-card featured">
+              <h4><span class="badge crit"><span class="glyph">▲</span> Critical</span> Do not sign yet</h4>
+              <p>One clause violates Dutch law and would leave you with <strong>no legal probation cap</strong>.</p>
+              <div class="actions">
+                <span class="btn sm">ⓘ Why is this a risk?</span>
+                <span class="btn sm">📄 BW 7:652</span>
+              </div>
+            </div>
+            <div class="hitl">
+              <h5>▲ Recommended next step</h5>
+              <p>Have a person review this with you. We can connect you to a free legal aid contact in your region.</p>
+              <div class="actions">
+                <span class="btn danger sm">Connect me to legal aid →</span>
+                <span class="btn sm ghost">I'll handle this myself</span>
+              </div>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph med">◐</span>
+              <span style="font-size: 13px;"><strong>§6</strong> · Non-compete</span>
+              <span class="chev">▾</span>
+            </div>
+            <div class="risk-card collapsed">
+              <span class="risk-glyph med">◐</span>
+              <span style="font-size: 13px;"><strong>§8</strong> · Overtime</span>
+              <span class="chev">▾</span>
+            </div>
+          </aside>
+        </div>
+        <div class="results-foot">
+          <span class="btn">⤓ Simplified (PDF)</span>
+          <span class="btn">⤓ Contract + notes (TXT)</span>
+          <span class="spacer"></span>
+          <span class="badge crit"><span class="glyph">▲</span> shared link will show this severity</span>
+          <span class="btn danger">🔗 Share with warning</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 8. WHY DRAWER ==================== -->
+  <section class="frame" id="f8">
+    <div class="frame-head">
+      <h2>8 · "Why is this a risk?" drawer</h2>
+      <span class="id">overlay on results</span>
+    </div>
+    <div class="frame-body">
+      <div class="why-stage">
+        <div class="why-base">
+          <div class="head-meta" style="font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">For you · Migrant Worker</div>
+          <div class="risk-card featured" style="max-width: 360px;">
+            <h4><span class="badge crit"><span class="glyph">▲</span> Critical</span> §4.2 · Probation</h4>
+            <p>Your contract sets a 9-month probation. Dutch law caps this at 2 months for a 1-year contract.</p>
+            <div class="actions">
+              <span class="btn sm" style="border-color: var(--accent); color: var(--accent);">ⓘ Why is this a risk?</span>
+              <span class="btn sm">📄 Show law</span>
+            </div>
+          </div>
+        </div>
+        <aside class="why-drawer">
+          <div class="row">
+            <h4>Why is this a risk?</h4>
+            <span class="grow"></span>
+            <span style="color: var(--text-3); font-size: 16px;">✕</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-3); font-family: var(--mono);">§4.2 Probation</div>
+          <p style="margin: 0; font-size: 13px;">
+            The law (<strong>BW 7:652</strong>) says probation may not exceed <strong>2 months</strong> for a contract of 1 year or longer.
+          </p>
+          <p style="margin: 0; font-size: 13px;">
+            Anything beyond that is <strong>void</strong> — meaning the clause doesn't apply, even if you signed it.
+          </p>
+          <div class="source-card">
+            <div style="font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">Source</div>
+            <div style="font-weight: 600; margin-bottom: 6px;">Burgerlijk Wetboek 7:652</div>
+            <a class="sm-link" href="#">Read original (Dutch) ↗</a>
+            <a class="sm-link" href="#">Read in plain language ↗</a>
+          </div>
+          <div class="reading-toggle">
+            <span style="font-weight: 600; color: oklch(35% 0.12 255);">Reading level:</span>
+            <span>Migrant Worker</span>
+            <span style="margin-left: auto; color: var(--text-3);">change ▾</span>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <div class="frame-note"><strong>Provenance</strong> · The same simplification engine rewrites the legal source to the active profile. Toggling profiles updates this drawer in place.</div>
+  </section>
+
+  <!-- ==================== 9. COMPARE ==================== -->
+  <section class="frame" id="f9">
+    <div class="frame-head">
+      <h2>9 · Compare two contracts</h2>
+      <span class="id">/app/compare/:a/:b</span>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">contractact-u-ally.app/app/compare/abc/def</span>
+      </div>
+      <div class="app-shell">
+        <div class="compare-bar">
+          <span>Compare:</span>
+          <span class="selectish">NL-2025-Probation.pdf ▾</span>
+          <strong style="color: var(--text-3);">vs</strong>
+          <span class="selectish">NL-2025-Offer-v2.pdf ▾</span>
+          <span style="margin-left: auto;"><span class="btn sm">⤓ Compare report (PDF)</span></span>
+        </div>
+        <div class="compare-grid">
+          <aside class="pane rail">
+            <div class="rail-section">
+              <h5>Risks · merged</h5>
+              <div class="summary-counts">
+                <div class="summary-row"><span class="risk-glyph crit">▲</span> A: 1 · B: 0</div>
+                <div class="summary-row"><span class="risk-glyph med">◐</span> A: 2 · B: 1</div>
+                <div class="summary-row"><span class="risk-glyph low">◌</span> A: 3 · B: 2</div>
+              </div>
+            </div>
+            <div class="rail-section">
+              <h5>Side by side</h5>
+              <div style="display: grid; gap: 4px;">
+                <div class="diff-row"><span class="risk-glyph crit">▲</span><span class="sec" style="font-family: var(--mono); color: var(--text-3); font-size: 11px;">§4.2</span><span class="arr">→</span><span class="risk-glyph ok">✓</span></div>
+                <div class="diff-row"><span class="risk-glyph med">◐</span><span class="sec" style="font-family: var(--mono); color: var(--text-3); font-size: 11px;">§6</span><span class="arr">→</span><span class="risk-glyph low">◌</span></div>
+                <div class="diff-row"><span class="risk-glyph med">◐</span><span class="sec" style="font-family: var(--mono); color: var(--text-3); font-size: 11px;">§8</span><span class="arr">→</span><span class="risk-glyph ok">✓</span></div>
+                <div class="diff-row"><span class="risk-glyph low">◌</span><span class="sec" style="font-family: var(--mono); color: var(--text-3); font-size: 11px;">§11</span><span class="arr">=</span><span class="risk-glyph low">◌</span></div>
+              </div>
+            </div>
+            <div style="margin-top: auto; padding: 12px; border-radius: 8px; background: var(--ok-soft); color: oklch(38% 0.12 150); font-size: 12px;">
+              ▶ <strong>B is safer</strong> in 3 of 4 risks.
+            </div>
+          </aside>
+
+          <section class="pane pdf" style="border-right: 1px solid var(--border);">
+            <div class="pdf-toolbar"><strong style="font-size: 12px;">Contract A</strong><span class="spacer"></span><span class="badge crit"><span class="glyph">▲</span> 1 critical</span></div>
+            <div class="pdf-page">
+              <h6>§4.2 · 9 months</h6>
+              <p style="margin: 6px 0; font-size: 9px;"><span class="highlight crit">9-month probation</span></p>
+              <h6>§6 · Non-compete</h6>
+              <p style="margin: 6px 0; font-size: 9px;"><span class="highlight med">6 months / metro</span></p>
+              <h6>§8 · Overtime</h6>
+              <p style="margin: 6px 0; font-size: 9px;"><span class="highlight med">unpaid overtime</span></p>
+              <div class="lorem-line short"></div>
+            </div>
+          </section>
+
+          <section class="pane pdf">
+            <div class="pdf-toolbar"><strong style="font-size: 12px;">Contract B</strong><span class="spacer"></span><span class="badge ok"><span class="glyph">✓</span> safer offer</span></div>
+            <div class="pdf-page">
+              <h6>§4.2 · 2 months</h6>
+              <p style="margin: 6px 0; font-size: 9px;">2-month probation · within legal cap</p>
+              <h6>§6 · Non-compete</h6>
+              <p style="margin: 6px 0; font-size: 9px;"><span class="highlight low">3 months / city only</span></p>
+              <h6>§8 · Overtime</h6>
+              <p style="margin: 6px 0; font-size: 9px;">Overtime paid at 1.5×</p>
+              <div class="lorem-line short"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <div class="frame-note"><strong>Sync scroll</strong> · Selecting a row in the merged rail scrolls both PDF panes to the matching clause.</div>
+  </section>
+
+  <!-- ==================== 10. SHARE ==================== -->
+  <section class="frame" id="f10">
+    <div class="frame-head">
+      <h2>10 · Share & download</h2>
+      <span class="id">dialog</span>
+    </div>
+    <div class="frame-body">
+      <div class="share-stage">
+        <div class="share-modal">
+          <div class="modal-head">
+            <h3>Share or download</h3>
+            <span style="color: var(--text-3);">✕</span>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0 0 8px; font-size: 12px; color: var(--text-2);">What do you want to share?</p>
+            <div class="radio-list">
+              <label class="on"><span class="radio-dot on"></span> <span><strong>Simplified summary only</strong> <em style="color: var(--text-3);">(safe)</em></span></label>
+              <label><span class="radio-dot"></span> <span>Contract + simplified notes <em style="color: var(--text-3);">(TXT)</em></span></label>
+              <label><span class="radio-dot"></span> <span>Full original PDF + notes <em style="color: var(--text-3);">(sensitive)</em></span></label>
+            </div>
+            <p style="margin: 14px 0 4px; font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em;">Share via</p>
+            <div class="share-row">
+              <span class="btn">🔗 Copy link</span>
+              <span class="btn">✉ Email</span>
+              <span class="btn primary">⤓ Download</span>
+            </div>
+            <div class="row" style="margin-top: 14px; font-size: 12px; color: var(--text-2);">
+              <span>Link expires in:</span>
+              <span class="selectish" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2);">24h ▾</span>
+              <span style="margin-left: auto;"><label><input type="checkbox" checked /> Require recipient to sign in</label></span>
+            </div>
+            <div class="warning">
+              ⚠ This contract has <strong>1 CRITICAL finding</strong>. Recipients will see this badge.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 11. TXT EXPORT ==================== -->
+  <section class="frame" id="f11">
+    <div class="frame-head">
+      <h2>11 · Downloaded TXT preview</h2>
+      <span class="id">contract + notes</span>
+    </div>
+    <div class="frame-body">
+      <div class="txt-preview">
+<span class="key">CONTRACTACT-U-ALLY · simplified report</span>
+<span style="color: oklch(70% 0.05 250);">Profile: Migrant Worker · Generated: 2026-04-25</span>
+
+─── §4.2 Probation period ─────────────────────────────────────
+ORIGINAL:
+  "The probation period shall be 9 (nine) months …"
+EXPLANATION (<span class="crit">▲ critical</span>):
+  Your contract sets 9 months. Dutch law caps this at 2 months
+  for a 1-year contract. Anything longer is NOT enforceable.
+SOURCE:
+  Burgerlijk Wetboek 7:652
+───────────────────────────────────────────────────────────────
+
+─── §6 Non-compete ────────────────────────────────────────────
+ORIGINAL:
+  "…6-month non-compete in the same metropolitan area…"
+EXPLANATION (<span style="color: oklch(78% 0.14 80);">◐ medium</span>):
+  6 months in the same metro is on the longer end. Legal, but
+  often negotiable down to 3 months or to a smaller geography.
+SOURCE:
+  Burgerlijk Wetboek 7:653
+
+─── §8 Overtime ───────────────────────────────────────────────
+ORIGINAL:
+  "All hours worked beyond 40h/week shall not be separately
+   compensated…"
+EXPLANATION (<span style="color: oklch(78% 0.14 80);">◐ medium</span>):
+  Salaried overtime clauses are common but must respect the
+  Working Hours Act. Track your hours in the first 4 weeks.
+SOURCE:
+  Arbeidstijdenwet · Article 5
+
+… and 3 more sections.
+      </div>
+    </div>
+    <div class="frame-note"><strong>Determinism</strong> · Generated server-side from the same fixture as the UI; snapshot-tested in CI.</div>
+  </section>
+
+</main>
+
+</body>
+</html>
