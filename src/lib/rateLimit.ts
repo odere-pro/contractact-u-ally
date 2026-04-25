@@ -20,8 +20,13 @@ interface BucketState {
 const buckets = new Map<string, BucketState>();
 
 function clientIp(req: Request): string {
-  const xri = req.headers.get("x-real-ip");
-  if (xri) return xri;
+  // `x-vercel-forwarded-for` is set by Vercel's edge and stripped if the
+  // client tries to supply it themselves — that's the only header we can
+  // trust for per-IP rate-limiting in production. `x-forwarded-for` is a
+  // local-dev fallback (and `x-real-ip` was previously trusted, which made
+  // the limiter trivially bypassable by spoofing the header).
+  const trusted = req.headers.get("x-vercel-forwarded-for");
+  if (trusted) return trusted.split(",")[0]?.trim() || "local";
   const xff = req.headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0]?.trim() || "local";
   return "local";

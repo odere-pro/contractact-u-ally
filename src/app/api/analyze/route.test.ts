@@ -11,7 +11,7 @@ function jsonRequest(body: unknown): Request {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-real-ip": `10.0.1.${ipCounter}`,
+      "x-vercel-forwarded-for": `10.0.1.${ipCounter}`,
     },
     body: JSON.stringify(body),
   });
@@ -121,7 +121,7 @@ describe("POST /api/analyze", () => {
     const { POST } = await import("./route");
     const req = new Request(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-real-ip": "10.0.1.99" },
+      headers: { "Content-Type": "application/json", "x-vercel-forwarded-for": "10.0.1.99" },
       body: "{not json",
     });
     const res = await POST(req);

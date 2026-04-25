@@ -129,6 +129,18 @@ export const errorEventSchema = z.object({
 export const MAX_CONTRACT_BYTES = 500 * 1024;
 const utf8ByteLength = (s: string): number => new TextEncoder().encode(s).byteLength;
 
+// typeId is interpolated into a filesystem path by ruleLoader.loadSpec, so
+// it must be locked to a strict allowlist shape — anything outside this
+// pattern can attempt traversal (../etc/passwd) or load arbitrary catalog
+// files. Real ids look like "nl-indefinite", "se-fixed-term", etc.
+export const TYPE_ID_PATTERN = /^[a-z]{2}-[a-z0-9-]+$/;
+
+export const typeIdSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(TYPE_ID_PATTERN, "typeId must match /^[a-z]{2}-[a-z0-9-]+$/");
+
 export const analyzeRequestSchema = z.object({
   ocrText: z
     .string()
@@ -137,6 +149,6 @@ export const analyzeRequestSchema = z.object({
       message: "ocrText exceeds 500KB",
     }),
   jurisdiction: jurisdictionSchema.optional(),
-  typeId: z.string().min(1).optional(),
+  typeId: typeIdSchema.optional(),
 });
 export type AnalyzeRequestInput = z.infer<typeof analyzeRequestSchema>;

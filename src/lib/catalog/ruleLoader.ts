@@ -8,6 +8,7 @@ import {
   contractTypeSpecSchema,
   redFlagClauseSchema,
   rulesetSchema,
+  TYPE_ID_PATTERN,
 } from "./schemas";
 import type { ContractTypeEntry, Jurisdiction, LoadedRuleSet, RedFlagClause, Rule } from "./types";
 
@@ -74,6 +75,12 @@ async function loadRedFlags(): Promise<readonly RedFlagClause[]> {
 }
 
 async function loadSpec(typeId: string): Promise<ContractTypeSpecCacheEntry> {
+  // Defence-in-depth: the analyze route validates typeId via zod, but
+  // re-checking here means any future internal caller cannot accidentally
+  // turn a bad id into a path-traversal read.
+  if (!TYPE_ID_PATTERN.test(typeId)) {
+    throw new Error(`Invalid typeId: must match /^[a-z]{2}-[a-z0-9-]+$/`);
+  }
   const cacheKey = `${dataRoot}::${typeId}`;
   const cached = specCache.get(cacheKey);
   if (cached) return cached;

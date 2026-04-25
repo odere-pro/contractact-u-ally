@@ -86,4 +86,13 @@ describe("ruleLoader", () => {
     __resetCatalogCachesForTests();
     await expect(loadRulesForType("nl-test", "nl")).rejects.toThrow();
   });
+
+  it("rejects typeIds that could traverse the filesystem", async () => {
+    // Even though the analyze route also validates this via zod, the loader
+    // must refuse on its own — defence in depth against future callers.
+    await expect(loadRulesForType("../etc/passwd", "nl")).rejects.toThrow(/Invalid typeId/);
+    await expect(loadRulesForType("nl-test/../../foo", "nl")).rejects.toThrow(/Invalid typeId/);
+    await expect(loadRulesForType("UPPERCASE", "nl")).rejects.toThrow(/Invalid typeId/);
+    await expect(loadRulesForType("a".repeat(200), "nl")).rejects.toThrow(/Invalid typeId/);
+  });
 });

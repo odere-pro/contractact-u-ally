@@ -19,7 +19,7 @@ function makeRequest(form: FormData): Request {
   return new Request(url, {
     method: "POST",
     body: form,
-    headers: { "x-real-ip": `10.0.0.${ipCounter}` },
+    headers: { "x-vercel-forwarded-for": `10.0.0.${ipCounter}` },
   });
 }
 
@@ -154,7 +154,7 @@ describe("POST /api/ocr", () => {
       const req = new Request(url, {
         method: "POST",
         body: fd,
-        headers: { "x-real-ip": sharedIp },
+        headers: { "x-vercel-forwarded-for": sharedIp },
       });
       const res = await POST(req);
       expect(res.status).toBe(200);
@@ -165,7 +165,7 @@ describe("POST /api/ocr", () => {
     const req = new Request(url, {
       method: "POST",
       body: fd,
-      headers: { "x-real-ip": sharedIp },
+      headers: { "x-vercel-forwarded-for": sharedIp },
     });
     const res = await POST(req);
     expect(res.status).toBe(429);
