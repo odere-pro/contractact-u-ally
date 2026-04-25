@@ -124,7 +124,8 @@ function computeTrackerStage(
   analysisPhase: ReturnType<typeof useAnalysisStream>["state"]["phase"],
   analysisStage: ReturnType<typeof useAnalysisStream>["state"]["stage"],
 ): TrackerStage {
-  if (ocrPhase === "error" || analysisPhase === "error") return "error";
+  if (ocrPhase === "error") return "error:ocr";
+  if (analysisPhase === "error") return `error:${analysisStage ?? "classify"}`;
   if (ocrPhase === "uploading") return "ocr";
   if (analysisPhase === "running") return analysisStage ?? "classify";
   if (analysisPhase === "done") return "done";
