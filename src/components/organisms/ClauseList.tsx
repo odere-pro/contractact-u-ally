@@ -1,22 +1,28 @@
 "use client";
 
+import { AlertCircle, AlertTriangle, CheckCircle2, HelpCircle } from "lucide-react";
+import type { ComponentType } from "react";
+import type { VariantProps } from "class-variance-authority";
+
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import type { ClauseEvent, ClauseStatus } from "@/lib/catalog/types";
 
 interface ClauseListProps {
   readonly clauses: readonly ClauseEvent[];
 }
 
-const STATUS_VARIANT: Record<
-  ClauseStatus,
-  "destructive" | "secondary" | "default" | "outline" | "ghost"
-> = {
+// Bind the status→variant map to the actual Badge cva schema so a
+// future rename or removal of a variant becomes a compile error here,
+// not a silent visual regression.
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
+
+const STATUS_VARIANT: Record<ClauseStatus, BadgeVariant> = {
   illegal: "destructive",
   exploitative: "default",
   permit_conflict: "destructive",
@@ -32,6 +38,27 @@ const STATUS_LABEL: Record<ClauseStatus, string> = {
   unchecked: "Unchecked",
 };
 
+// Severity must be distinguishable without color (color-blind users,
+// grayscale, low-contrast displays). Pair every badge with a glyph
+// that maps 1:1 to status.
+const STATUS_ICON: Record<ClauseStatus, ComponentType<{ className?: string }>> = {
+  illegal: AlertTriangle,
+  exploitative: AlertCircle,
+  permit_conflict: AlertTriangle,
+  compliant: CheckCircle2,
+  unchecked: HelpCircle,
+};
+
+// Defence-in-depth: BE prompt caps originalText at 300 chars, but we
+// never trust the network. A malformed or oversized payload is
+// truncated at render so it can't blow up the layout.
+const MAX_ORIGINAL_TEXT_RENDER = 600;
+function truncate(text: string): string {
+  return text.length > MAX_ORIGINAL_TEXT_RENDER
+    ? `${text.slice(0, MAX_ORIGINAL_TEXT_RENDER)}…`
+    : text;
+}
+
 export function ClauseList({ clauses }: ClauseListProps) {
   if (clauses.length === 0) {
     return (
@@ -42,8 +69,13 @@ export function ClauseList({ clauses }: ClauseListProps) {
   }
 
   return (
-    <Accordion data-testid="clause-list" multiple className="w-full">
+    // aria-live="off" prevents AT from spontaneously announcing each
+    // appended clause as the NDJSON stream flows in. The page-level
+    // <LiveRegion> already announces stage transitions and the final
+    // summary; per-clause announcements would flood NVDA/JAWS users.
+    <Accordion data-testid="clause-list" multiple aria-live="off" className="w-full">
       {clauses.map((c) => {
+        const Icon = STATUS_ICON[c.status];
         // Compose an explicit accessible name so AT announces severity +
         // title + citation regardless of how @base-ui flattens the nested
         // markup. Without this, screen readers may read only the first
@@ -57,6 +89,7 @@ export function ClauseList({ clauses }: ClauseListProps) {
               <div className="flex flex-col items-start gap-1 pr-2">
                 <div className="flex items-center gap-2">
                   <Badge aria-hidden variant={STATUS_VARIANT[c.status]}>
+                    <Icon className="size-3" aria-hidden />
                     {STATUS_LABEL[c.status]}
                   </Badge>
                   <span className="font-medium">{c.title}</span>
@@ -72,7 +105,7 @@ export function ClauseList({ clauses }: ClauseListProps) {
               <div className="flex flex-col gap-3">
                 {c.originalText && (
                   <blockquote className="border-border text-muted-foreground border-l-2 pl-3 text-sm italic">
-                    {c.originalText}
+                    {truncate(c.originalText)}
                   </blockquote>
                 )}
                 <p>{c.explanation}</p>
