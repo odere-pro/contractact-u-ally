@@ -1,0 +1,13 @@
+node_modules
+.next
+.vercel
+out
+build
+coverage
+package-lock.json
+public
+tests/fixtures
+docs/diagrams
+.claude
+**/*.pptx
+**/*.svg

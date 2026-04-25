@@ -1,0 +1,20 @@
+/* contractact-u-ally design tokens.
+ *
+ * Layered on top of shadcn primitives. Components reference these via
+ * var(--token), never via hardcoded values (enforced by guard:tokens).
+ */
+
+:root {
+  /* Typography. clamp() gives fluid scale without media queries. */
+  --text-hero: clamp(2rem, 1.4rem + 2.4vw, 3.75rem);
+  --text-section: clamp(1.5rem, 1.2rem + 1.4vw, 2.25rem);
+  --text-body-lg: clamp(1rem, 0.95rem + 0.2vw, 1.125rem);
+
+  /* Spacing rhythm. */
+  --space-section: clamp(2rem, 1.5rem + 2vw, 4rem);
+
+  /* Motion. */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}

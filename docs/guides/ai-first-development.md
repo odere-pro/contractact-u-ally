@@ -84,15 +84,15 @@ Use the security-reviewer agent to check src/app/api/ocr/route.ts.
 
 ## Project rules (auto-loaded by Claude)
 
-| Rule file                          | Governs                                       |
-| ---------------------------------- | --------------------------------------------- |
-| `.claude/rules/typescript.md`      | Strict types, immutability, Zod at boundaries |
-| `.claude/rules/nextjs.md`          | App Router, Server Components, thin routes    |
-| `.claude/rules/security.md`        | Document handling, secrets, upload validation |
-| `.claude/rules/testing.md`         | Playwright, no SDK mocks                      |
-| `.claude/rules/git.md`             | Conventional commits, PR before merge         |
-| `.claude/rules/gotchas.md`         | Non-obvious pitfalls; read before debugging   |
-| `.claude/rules/no-hardcoded-tokens.md` | Design-token enforcement in components    |
+| Rule file                              | Governs                                       |
+| -------------------------------------- | --------------------------------------------- |
+| `.claude/rules/typescript.md`          | Strict types, immutability, Zod at boundaries |
+| `.claude/rules/nextjs.md`              | App Router, Server Components, thin routes    |
+| `.claude/rules/security.md`            | Document handling, secrets, upload validation |
+| `.claude/rules/testing.md`             | Playwright, no SDK mocks                      |
+| `.claude/rules/git.md`                 | Conventional commits, PR before merge         |
+| `.claude/rules/gotchas.md`             | Non-obvious pitfalls; read before debugging   |
+| `.claude/rules/no-hardcoded-tokens.md` | Design-token enforcement in components        |
 
 ---
 

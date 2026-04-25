@@ -1,0 +1,34 @@
+{
+  "mcpServers": {
+    "shadcn": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"],
+      "env": {}
+    },
+    "nextjs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"],
+      "env": {}
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {}
+    },
+    "structurizr": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["mcp-remote", "https://mcp.structurizr.com/mcp"],
+      "env": {}
+    },
+    "gemini-image": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@shinpr/mcp-image"],
+      "env": {}
+    }
+  }
+}
