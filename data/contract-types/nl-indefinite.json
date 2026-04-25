@@ -1,0 +1,21 @@
+{
+  "id": "nl-indefinite",
+  "title": "Dutch indefinite-term employment contract",
+  "jurisdiction": "nl",
+  "applicable_rule_ids": ["nl-trial-period-cap", "nl-non-compete-must-be-written"],
+  "mandatory_clauses": [
+    {
+      "id": "salary",
+      "description": "Gross monthly salary stated in EUR."
+    },
+    {
+      "id": "working-hours",
+      "description": "Number of contracted working hours per week."
+    },
+    {
+      "id": "notice-period",
+      "description": "Notice period for termination by either party."
+    }
+  ],
+  "red_flag_ids": []
+}

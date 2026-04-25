@@ -1,0 +1,22 @@
+{
+  "jurisdiction": "nl",
+  "source": "nl-labor-law.json",
+  "rules": [
+    {
+      "id": "nl-trial-period-cap",
+      "article": "BW 7:652",
+      "label": "Trial period cap",
+      "category": "contract-terms",
+      "summary": "For an indefinite-term contract, the trial period (proeftijd) may not exceed two months. For a fixed-term contract of two years or more, the cap is also two months. Any longer trial period is void by operation of law.",
+      "tags": ["trial-period", "proeftijd", "contract-start"]
+    },
+    {
+      "id": "nl-non-compete-must-be-written",
+      "article": "BW 7:653",
+      "label": "Non-compete clause must be in writing",
+      "category": "contract-terms",
+      "summary": "A non-compete clause (concurrentiebeding) is only valid in an indefinite-term contract when agreed in writing with an adult employee. In a fixed-term contract it requires an additional written justification of compelling business interest. Verbal non-competes are unenforceable.",
+      "tags": ["non-compete", "concurrentiebeding", "post-termination"]
+    }
+  ]
+}
