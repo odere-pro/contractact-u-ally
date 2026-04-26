@@ -1,0 +1,20 @@
+@startuml c4-context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.10.0/C4_Context.puml
+
+title contractact-u-ally — System Context (C4 L1)
+
+Person(worker, "Worker", "Uploads an employment contract; reads a plain-language risk report in their language")
+
+System(app, "contractact-u-ally", "Web app: PDF in, illegal-clause report out within 60s")
+
+System_Ext(mistral, "Mistral OCR API", "Extracts text from PDF contracts")
+System_Ext(anthropic, "Anthropic API", "Claude Sonnet 4.6 — clause-by-clause analysis (streaming)")
+System_Ext(vercel, "Vercel Platform", "Hosting, edge, CDN, function runtime")
+
+Rel(worker, app, "Uploads PDF, reads report", "HTTPS")
+Rel(app, mistral, "PDF bytes → text", "HTTPS")
+Rel(app, anthropic, "Streamed analysis", "HTTPS / SSE")
+Rel(app, vercel, "Deployed on", "Vercel Functions, CDN")
+
+SHOW_LEGEND()
+@enduml
