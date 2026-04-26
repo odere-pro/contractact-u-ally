@@ -101,10 +101,10 @@ export async function POST(req: Request): Promise<Response> {
   } catch (err) {
     if (err instanceof TranslationUnavailableError) {
       console.warn(`/api/translate: unavailable (${err.providerName}): ${err.message}`);
-      return jsonError(
-        503,
-        `Translation to ${LANGUAGE_NAME[targetLang]} is temporarily unavailable. Showing original text.`,
-      );
+      const reason = /credit|quota|billing/i.test(err.message)
+        ? "Anthropic credits exhausted — translation is offline until the plan is topped up."
+        : `Translation to ${LANGUAGE_NAME[targetLang]} is temporarily unavailable. Showing original text.`;
+      return jsonError(503, reason);
     }
     console.error("/api/translate failure:", err);
     // Specific over generic: tell the user which target failed and what

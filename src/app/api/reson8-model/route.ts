@@ -134,7 +134,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     return jsonError(429, "Too many requests.");
   }
 
-  const apiKey = process.env.RESON8_API_KEY;
+  // Trim — Vercel env values pasted with trailing whitespace/newlines cause
+  // fetch() to throw `TypeError: Invalid character in header content` instead
+  // of a clean 401, surfacing as an opaque "service unreachable" in the UI.
+  const apiKey = process.env.RESON8_API_KEY?.trim();
   if (!apiKey) return jsonError(503, "Transcription service not configured");
 
   let body: unknown;
@@ -169,6 +172,13 @@ export async function POST(req: NextRequest): Promise<Response> {
   // Merge dynamic (contract-specific) first so they take priority in the slice.
   const allPhrases = Array.from(new Set([...dynamic, ...STATIC_PHRASES])).slice(0, MAX_PHRASES);
 
+  console.log("[reson8.model] →", {
+    url: RESON8_CUSTOM_MODEL_URL,
+    contractName,
+    phraseCount: allPhrases.length,
+    keyLen: apiKey.length,
+  });
+
   let reson8Res: Response;
   try {
     // Bug fix: AbortSignal.timeout prevents hanging if Reson8 is slow.
@@ -188,6 +198,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     });
   } catch (err) {
     const isTimeout = err instanceof Error && err.name === "TimeoutError";
+    console.error("[reson8.model] fetch threw", {
+      isTimeout,
+      name: err instanceof Error ? err.name : typeof err,
+      message: err instanceof Error ? err.message : String(err),
+      cause: err instanceof Error ? err.cause : undefined,
+    });
     return jsonError(
       502,
       isTimeout ? "Custom model service timed out" : "Custom model service unreachable",
@@ -196,7 +212,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   if (!reson8Res.ok) {
     const errText = await reson8Res.text().catch(() => "");
-    console.error("Reson8 custom model error:", reson8Res.status, errText);
+    console.error("[reson8.model] non-OK", reson8Res.status, errText);
     const msg =
       reson8Res.status === 401
         ? "Invalid transcription API key"
@@ -207,14 +223,20 @@ export async function POST(req: NextRequest): Promise<Response> {
   let data: unknown;
   try {
     data = await reson8Res.json();
-  } catch {
+  } catch (err) {
+    console.error("[reson8.model] invalid JSON", {
+      message: err instanceof Error ? err.message : String(err),
+    });
     return jsonError(502, "Custom model service returned invalid JSON");
   }
 
   const modelId = (data as Record<string, unknown>)["id"];
   if (typeof modelId !== "string" || !modelId) {
+    console.error("[reson8.model] response missing id", data);
     return jsonError(502, "Custom model service returned no ID");
   }
+
+  console.log("[reson8.model] ← OK", { modelId });
 
   return new Response(JSON.stringify({ modelId }), {
     status: 200,

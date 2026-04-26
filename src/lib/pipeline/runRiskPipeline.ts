@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getAnthropic } from "@/lib/anthropicClient";
+import { isAnthropicCreditError } from "@/lib/anthropicErrors";
 import { classifyContract } from "@/lib/catalog/classifier";
 import { loadRulesForType } from "@/lib/catalog/ruleLoader";
 import { clauseEventSchema, MAX_CONTRACT_BYTES, summaryEventSchema } from "@/lib/catalog/schemas";
@@ -226,6 +227,13 @@ function sanitizeErrorMessage(err: unknown): string {
   if (err instanceof OcrPipelineError) return safeDomainMessage(err.message, "OCR pipeline error");
   if (err instanceof ContractTextRangeError) {
     return safeDomainMessage(err.message, "Contract text out of accepted range");
+  }
+  // Surface Anthropic credit/auth failures as a clear, actionable message
+  // instead of the cryptic raw SDK string. Without this users see the SDK
+  // mentioning "credit balance" with no idea who's responsible for fixing it.
+  if (isAnthropicCreditError(err)) {
+    console.error("runRiskPipeline: Anthropic credit balance too low");
+    return "Anthropic credits exhausted. Top up the API plan and retry.";
   }
   if (err instanceof Error) {
     const raw = err.message;
