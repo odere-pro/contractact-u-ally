@@ -467,3 +467,22 @@ export function getMockTranslations(
   const dict = MOCK_TRANSLATIONS[target];
   return items.map((item) => ({ id: item.id, text: dict[item.id] ?? item.text }));
 }
+
+/**
+ * True when at least one inbound item id has a canned translation in the
+ * mock dictionary (for either NL or SV — both share the same key set).
+ * Lets a chained provider distinguish "real contract, no mock data" (skip)
+ * from "the analyze stage already swapped in mock clauses, translate them"
+ * (handle). When no id matches, the provider should bow out so the chain
+ * can return a clear 503 instead of silently passing English back.
+ */
+export function mockHasAnyMatch(items: readonly TranslateItem[]): boolean {
+  if (items.length === 0) return false;
+  // NL and SV dictionaries share identical key sets — checking either one
+  // is sufficient. Pick NL for stability.
+  const dict = MOCK_TRANSLATIONS.nl;
+  for (const item of items) {
+    if (item.id in dict) return true;
+  }
+  return false;
+}

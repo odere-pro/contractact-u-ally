@@ -38,8 +38,13 @@ const responseSchema = z.object({
 // User-facing fallback copy. Hoisted so each branch reads the same string
 // and so future i18n can replace these in one place. Keep terse — they
 // land in an inline Alert next to the language switcher.
-const TRANSLATION_NETWORK_ERROR = "Translation failed. Showing original text.";
-const TRANSLATION_INVALID_ERROR = "Translation response invalid. Showing original text.";
+//
+// Both 503 (provider unavailable, e.g. credits depleted) and 502
+// (provider hard-failure) surface as the same string — they're both
+// "we tried, it didn't work". Keeping a single user-facing message
+// avoids leaking server implementation details.
+const TRANSLATION_NETWORK_ERROR = "Translation temporarily unavailable. Showing original text.";
+const TRANSLATION_INVALID_ERROR = "Translation temporarily unavailable. Showing original text.";
 
 // Field-id prefixes so we can re-hydrate the API response back into the
 // per-clause shape without an out-of-band map. Field name is encoded in
