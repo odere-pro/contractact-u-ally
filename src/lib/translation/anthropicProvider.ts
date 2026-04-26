@@ -3,7 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 import { getAnthropic } from "@/lib/anthropicClient";
-import { isAnthropicCreditError } from "@/lib/anthropicErrors";
+import { isAnthropicAuthError, isAnthropicCreditError } from "@/lib/anthropicErrors";
 
 import {
   TranslationUnavailableError,
@@ -60,13 +60,6 @@ export const anthropicTranslationProvider: TranslationProvider = {
 
     let response;
     try {
-      console.log("[anthropic] translate", {
-        model: TRANSLATE_MODEL,
-        max_tokens: TRANSLATE_MAX_TOKENS,
-        targetLang,
-        itemCount: items.length,
-        userMessageLen: userMessage.length,
-      });
       response = await getAnthropic().messages.create({
         model: TRANSLATE_MODEL,
         max_tokens: TRANSLATE_MAX_TOKENS,
@@ -76,6 +69,9 @@ export const anthropicTranslationProvider: TranslationProvider = {
     } catch (err) {
       if (isAnthropicCreditError(err)) {
         throw new TranslationUnavailableError("Anthropic credit exhausted", NAME);
+      }
+      if (isAnthropicAuthError(err)) {
+        throw new TranslationUnavailableError("Anthropic API key missing or invalid", NAME);
       }
       throw err;
     }
