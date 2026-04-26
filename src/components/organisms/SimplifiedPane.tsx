@@ -6,7 +6,6 @@ import { CheckCircle2 } from "lucide-react";
 import { ClauseCard } from "@/components/molecules/ClauseCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { DEFAULT_FILTER, applySeverityFilter, type SeverityFilter } from "@/lib/clauseFilters";
-import { MIGRANT_WORKER_LABEL, MIGRANT_WORKER_TAGLINE } from "@/lib/profileCopy";
 import { sortBySeverity } from "@/lib/severity";
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
 
@@ -55,13 +54,6 @@ export function SimplifiedPane({
       aria-label="Plain-language explanation"
       className="flex flex-col gap-3 p-4"
     >
-      <header className="flex flex-col gap-1">
-        <span className="text-muted-foreground text-[10px] font-semibold tracking-widest uppercase">
-          For you · {MIGRANT_WORKER_LABEL}
-        </span>
-        <p className="text-muted-foreground text-xs leading-relaxed">{MIGRANT_WORKER_TAGLINE}</p>
-      </header>
-
       {allClear && (
         <Card className="border-ok border-2">
           <CardContent className="flex items-start gap-3 p-4">
