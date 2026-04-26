@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getAnthropic } from "@/lib/anthropicClient";
+import { isAnthropicCreditError, mockAnalyzeNdjsonLines } from "@/lib/anthropicFallback";
 import { classifyContract } from "@/lib/catalog/classifier";
 import { loadRulesForType } from "@/lib/catalog/ruleLoader";
 import { clauseEventSchema, MAX_CONTRACT_BYTES, summaryEventSchema } from "@/lib/catalog/schemas";
@@ -46,18 +47,43 @@ export interface TextStreamSourceArgs {
 
 export type TextStreamFactory = (args: TextStreamSourceArgs) => AsyncIterable<string>;
 
-async function* defaultClaudeStream(args: TextStreamSourceArgs): AsyncIterable<string> {
-  const anthropicStream = getAnthropic().messages.stream({
-    model: ANALYZE_MODEL,
-    max_tokens: ANALYZE_MAX_TOKENS,
-    system: args.systemPrompt,
-    messages: [{ role: "user", content: args.userMessage }],
-  });
+async function* mockAnalyzeStream(): AsyncIterable<string> {
+  for (const line of mockAnalyzeNdjsonLines()) {
+    yield line;
+  }
+}
 
-  for await (const event of anthropicStream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      yield event.delta.text;
+async function* defaultClaudeStream(args: TextStreamSourceArgs): AsyncIterable<string> {
+  let anthropicStream;
+  try {
+    anthropicStream = getAnthropic().messages.stream({
+      model: ANALYZE_MODEL,
+      max_tokens: ANALYZE_MAX_TOKENS,
+      system: args.systemPrompt,
+      messages: [{ role: "user", content: args.userMessage }],
+    });
+  } catch (err) {
+    if (isAnthropicCreditError(err)) {
+      console.warn("defaultClaudeStream: Anthropic credit error — streaming mocked analysis");
+      yield* mockAnalyzeStream();
+      return;
     }
+    throw err;
+  }
+
+  try {
+    for await (const event of anthropicStream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        yield event.delta.text;
+      }
+    }
+  } catch (err) {
+    if (isAnthropicCreditError(err)) {
+      console.warn("defaultClaudeStream: Anthropic credit error mid-stream — switching to mock");
+      yield* mockAnalyzeStream();
+      return;
+    }
+    throw err;
   }
 }
 
