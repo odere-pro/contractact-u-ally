@@ -467,13 +467,3 @@ export function getMockTranslations(
   const dict = MOCK_TRANSLATIONS[target];
   return items.map((item) => ({ id: item.id, text: dict[item.id] ?? item.text }));
 }
-
-/**
- * True when the inbound translate items reference at least one mock
- * clause id. Lets the route distinguish "mock contract on screen, no
- * API key, return real translations" from "real contract on screen,
- * no API key, fall back to source text".
- */
-export function hasMockTranslationItems(items: readonly TranslateItem[]): boolean {
-  return items.some((item) => item.id === "ocr" || item.id.startsWith("c:mock-"));
-}

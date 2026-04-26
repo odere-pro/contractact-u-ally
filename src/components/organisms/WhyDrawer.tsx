@@ -14,14 +14,16 @@ interface WhyDrawerProps {
   readonly onOpenChange: (open: boolean) => void;
 }
 
-// Side drawer that explains a single clause's risk: severity, plain-
-// language rationale, and the rule citation.
+// Side drawer that explains a single clause: severity, plain-language
+// rationale, and the rule citation. Title matches the only entrypoint
+// label in ClauseCard ("Ask a question") so the heading doesn't read
+// as a different question than the button the user just clicked.
 export function WhyDrawer({ clause, open, onOpenChange }: WhyDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       {clause && (
         <SheetContent
-          title="Why is this a risk?"
+          title="About this clause"
           description={
             <span>
               <SectionRef id={clause.id} /> · {clause.title}

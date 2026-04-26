@@ -5,8 +5,8 @@ import { z } from "zod";
 import { getAnthropic } from "@/lib/anthropicClient";
 import {
   getMockTranslations,
-  hasMockTranslationItems,
   isAnthropicCreditError,
+  isMockOnlyMode,
 } from "@/lib/anthropicFallback";
 import { rateLimit } from "@/lib/rateLimit";
 import { UI_LANGUAGES, type TranslateResponse, type UiLanguage } from "@/lib/translation/types";
@@ -93,17 +93,18 @@ export async function POST(req: Request): Promise<Response> {
     return jsonOk({ translations: items });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    // Mock-only mode: when the inbound items reference the mock contract,
-    // serve pre-canned NL/SV translations instead of passing the English
-    // source through. Without this, toggling language in a credit-less
-    // demo silently re-shows the English text and looks broken.
-    if (hasMockTranslationItems(items)) {
-      return jsonOk({ translations: getMockTranslations(targetLang, items) });
-    }
-    // Real OCR contract with no API key — degrade gracefully so the UI
-    // doesn't strand the user on a blank pane.
-    return jsonOk({ translations: items });
+  if (isMockOnlyMode()) {
+    // Mock-only mode (no API key): the analyze pipeline already swapped
+    // real OCR for the mock contract, so the inbound items are mock ids
+    // by construction. Serve canned NL/SV translations instead of the
+    // English source — otherwise a language toggle silently re-shows
+    // English and the demo looks broken.
+    //
+    // Gating on the server-side `isMockOnlyMode()` (and NOT on
+    // client-supplied ids) closes a spoofability hole: a crafted
+    // request with `id: "c:mock-trial-period:title"` would otherwise
+    // receive canned text regardless of the contract on screen.
+    return jsonOk({ translations: getMockTranslations(targetLang, items) });
   }
 
   // FIXME(demo-hack): translation should ship as a server-side cache of
@@ -122,12 +123,10 @@ export async function POST(req: Request): Promise<Response> {
   } catch (err) {
     if (isAnthropicCreditError(err)) {
       console.warn("/api/translate: Anthropic credit error — falling back");
-      // Same mock-vs-real split as the no-key branch above. Mock
-      // contract gets canned translations; real contract degrades to
-      // source text.
-      if (hasMockTranslationItems(items)) {
-        return jsonOk({ translations: getMockTranslations(targetLang, items) });
-      }
+      // The credit-error path is hit with a real API key, which means
+      // the analyze stage ran for real and the inbound items belong to
+      // a real uploaded contract. Returning canned mock text here would
+      // be wrong — degrade to source text so the UI keeps working.
       return jsonOk({ translations: items });
     }
     console.error("/api/translate failure:", err);
