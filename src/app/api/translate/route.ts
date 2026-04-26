@@ -3,7 +3,11 @@ import "server-only";
 import { z } from "zod";
 
 import { getAnthropic } from "@/lib/anthropicClient";
-import { isAnthropicCreditError } from "@/lib/anthropicFallback";
+import {
+  getMockTranslations,
+  hasMockTranslationItems,
+  isAnthropicCreditError,
+} from "@/lib/anthropicFallback";
 import { rateLimit } from "@/lib/rateLimit";
 import { UI_LANGUAGES, type TranslateResponse, type UiLanguage } from "@/lib/translation/types";
 
@@ -90,12 +94,25 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    // Mirror the analyze pipeline's degrade-to-original behaviour so the
-    // UI never breaks: when Claude is unreachable, return the source
-    // text untouched.
+    // Mock-only mode: when the inbound items reference the mock contract,
+    // serve pre-canned NL/SV translations instead of passing the English
+    // source through. Without this, toggling language in a credit-less
+    // demo silently re-shows the English text and looks broken.
+    if (hasMockTranslationItems(items)) {
+      return jsonOk({ translations: getMockTranslations(targetLang, items) });
+    }
+    // Real OCR contract with no API key — degrade gracefully so the UI
+    // doesn't strand the user on a blank pane.
     return jsonOk({ translations: items });
   }
 
+  // FIXME(demo-hack): translation should ship as a server-side cache of
+  // pre-translated strings (or at minimum a Vercel runtime-cache key per
+  // contract hash + lang). Calling Haiku live on every language toggle
+  // is here only because the demo accepts arbitrary uploaded contracts
+  // and we don't yet have a translation memory layer. Replace before
+  // shipping to real users — burns model budget, leaks contract content
+  // to the provider, and adds 1–3 s to every language switch.
   const systemPrompt = buildSystemPrompt(targetLang);
   const userMessage = JSON.stringify({ items });
 
@@ -104,7 +121,13 @@ export async function POST(req: Request): Promise<Response> {
     translated = await runTranslation(systemPrompt, userMessage, items);
   } catch (err) {
     if (isAnthropicCreditError(err)) {
-      console.warn("/api/translate: Anthropic credit error — returning source text");
+      console.warn("/api/translate: Anthropic credit error — falling back");
+      // Same mock-vs-real split as the no-key branch above. Mock
+      // contract gets canned translations; real contract degrades to
+      // source text.
+      if (hasMockTranslationItems(items)) {
+        return jsonOk({ translations: getMockTranslations(targetLang, items) });
+      }
       return jsonOk({ translations: items });
     }
     console.error("/api/translate failure:", err);
