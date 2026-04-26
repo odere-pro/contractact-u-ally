@@ -124,3 +124,30 @@ streaming JSON parser, and per-line validation contains corruption.
 | Classify   | Unknown contract type  | Falls back to a generic ruleset              |
 | Stream     | Anthropic disconnect   | Stream closes; partial clauses stay rendered |
 | Validation | Malformed JSON line    | Line dropped, stream continues               |
+
+---
+
+## 5. Request path — sequence
+
+![Request path sequence](diagrams/img/sequence-request-path.svg)
+
+The numbered messages walk through one full session: PDF drop → OCR → JSON
+analyze → streamed NDJSON → rendered report. The streaming `loop` block
+captures the inner cycle: each `text_delta` is buffered, split into a line,
+zod-validated, and dispatched as either a clause event, a summary event, or
+silently dropped.
+
+---
+
+## 6. Notes for the next iteration
+
+- **Deployment view (C4 L4):** map containers to Vercel Functions and
+  external provider regions (Mistral EU, Anthropic).
+- **Observability:** structured server logs (no PII) — request id, stage,
+  duration, provider latency. The existing `stage` events already serve as
+  client-side timing breadcrumbs.
+- **Resilience:** wrap the Anthropic call in a single retry on transient
+  network errors — never on 4xx. Today the client retries the full
+  `/api/analyze` request.
+- **Caching:** OCR text for identical PDF hashes could be cached per session
+  in memory only (no disk). Out of scope until the rule engine stabilizes.
