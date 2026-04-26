@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-// Side-anchored Dialog. Reused for the "Why is this a risk?" drawer.
+// Side-anchored Dialog. Reused for the per-clause detail drawer.
 // We piggy-back on @base-ui's Dialog primitive (focus trap, ESC, etc.)
 // and only swap layout + entry animation.
 

@@ -172,16 +172,6 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
               <Button
                 size="default"
                 variant="outline"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onShowWhy(clause);
-                }}
-              >
-                Why is this a risk?
-              </Button>
-              <Button
-                size="default"
-                variant="outline"
                 data-testid={`clause-card-ask-${clause.id}`}
                 onClick={(event) => {
                   event.stopPropagation();
