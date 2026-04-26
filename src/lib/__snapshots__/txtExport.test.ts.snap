@@ -1,0 +1,27 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`txtExport > renders a deterministic, sorted report 1`] = `
+"CONTRACTACT-U-ALLY · simplified report
+Profile: Migrant Worker · Generated: 2026-04-26
+Summary: 3 clauses · 1 illegal · 1 exploitative · 1 compliant
+
+────────────────────────────────────────────────────────────────
+§4.2 Probation period  [Critical]
+────────────────────────────────────────────────────────────────
+ORIGINAL: "9 (nine) months from start of employment"
+EXPLANATION: Dutch law caps probation at 2 months for a 1-year contract.
+ACTION: Ask for it to be reduced to 2 months in writing.
+SOURCE: Burgerlijk Wetboek 7:652 — BW 7:652
+
+────────────────────────────────────────────────────────────────
+§6 Non-compete  [Medium]
+────────────────────────────────────────────────────────────────
+ORIGINAL: "6 months in the same metropolitan area"
+EXPLANATION: Legal but on the longer end. Negotiable.
+
+────────────────────────────────────────────────────────────────
+§5 Wages  [OK]
+────────────────────────────────────────────────────────────────
+EXPLANATION: Above legal minimum.
+"
+`;
