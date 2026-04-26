@@ -115,10 +115,22 @@ const validSummary = JSON.stringify({
   compliantCount: 0,
 });
 
+// Shared fakes — the OCR stage now runs inside the pipeline, so every
+// test injects a fake OCR factory that returns 300 chars of contract-y
+// text plus a fake Claude stream factory.
+const fakeOcr = (text: string) =>
+  async function () {
+    return { ok: true as const, text, pages: 1, durationMs: 1 };
+  };
+
+const PDF_BYTES = new Uint8Array([0x25, 0x50, 0x44, 0x46]); // "%PDF" — bytes are not inspected by the pipeline beyond passing through to OCR.
+
 describe("runRiskPipeline", () => {
   it("emits stage events, then valid clauses, then summary", async () => {
     const stream = runRiskPipeline({
-      ocrText: "x".repeat(300),
+      pdfBytes: PDF_BYTES,
+      mistralApiKey: "test",
+      ocrFactory: fakeOcr("x".repeat(300)),
       typeId: "nl-test",
       jurisdiction: "nl",
       textStreamFactory: async function* () {
@@ -130,6 +142,9 @@ describe("runRiskPipeline", () => {
     const events = (await readNdjson(stream)) as { type: string }[];
     const types = events.map((e) => e.type);
     expect(types).toEqual([
+      "stage", // ocr 0
+      "stage", // ocr 1
+      "ocr_text",
       "stage", // classify 0
       "stage", // classify 1
       "stage", // load_rules 0
@@ -142,7 +157,9 @@ describe("runRiskPipeline", () => {
 
   it("drops malformed lines silently and keeps streaming", async () => {
     const stream = runRiskPipeline({
-      ocrText: "x".repeat(300),
+      pdfBytes: PDF_BYTES,
+      mistralApiKey: "test",
+      ocrFactory: fakeOcr("x".repeat(300)),
       typeId: "nl-test",
       jurisdiction: "nl",
       textStreamFactory: async function* () {
@@ -160,7 +177,9 @@ describe("runRiskPipeline", () => {
 
   it("flushes a final fragment that has no trailing newline", async () => {
     const stream = runRiskPipeline({
-      ocrText: "x".repeat(300),
+      pdfBytes: PDF_BYTES,
+      mistralApiKey: "test",
+      ocrFactory: fakeOcr("x".repeat(300)),
       typeId: "nl-test",
       jurisdiction: "nl",
       textStreamFactory: async function* () {
@@ -174,7 +193,9 @@ describe("runRiskPipeline", () => {
 
   it("emits an error event when the text stream throws", async () => {
     const stream = runRiskPipeline({
-      ocrText: "x".repeat(300),
+      pdfBytes: PDF_BYTES,
+      mistralApiKey: "test",
+      ocrFactory: fakeOcr("x".repeat(300)),
       typeId: "nl-test",
       jurisdiction: "nl",
       textStreamFactory: async function* () {
@@ -186,5 +207,40 @@ describe("runRiskPipeline", () => {
     const errs = events.filter((e) => e.type === "error");
     expect(errs).toHaveLength(1);
     expect(errs[0].message).toBe("upstream blew up");
+  });
+
+  it("emits an error event when OCR fails", async () => {
+    const stream = runRiskPipeline({
+      pdfBytes: PDF_BYTES,
+      mistralApiKey: "test",
+      ocrFactory: async () => ({ ok: false as const, reason: "OCR service unreachable" }),
+      typeId: "nl-test",
+      jurisdiction: "nl",
+      textStreamFactory: async function* () {
+        // Should not run — OCR fails before the analyze stage.
+      },
+    });
+    const events = (await readNdjson(stream)) as { type: string; message?: string }[];
+    const errs = events.filter((e) => e.type === "error");
+    expect(errs).toHaveLength(1);
+    expect(errs[0].message).toBe("OCR service unreachable");
+    expect(events.find((e) => e.type === "clause")).toBeUndefined();
+  });
+
+  it("rejects OCR text shorter than 200 chars with an error event", async () => {
+    const stream = runRiskPipeline({
+      pdfBytes: PDF_BYTES,
+      mistralApiKey: "test",
+      ocrFactory: fakeOcr("too short"),
+      typeId: "nl-test",
+      jurisdiction: "nl",
+      textStreamFactory: async function* () {
+        // Should not run — short OCR text fails before the analyze stage.
+      },
+    });
+    const events = (await readNdjson(stream)) as { type: string; message?: string }[];
+    const errs = events.filter((e) => e.type === "error");
+    expect(errs).toHaveLength(1);
+    expect(errs[0].message).toMatch(/too short/);
   });
 });

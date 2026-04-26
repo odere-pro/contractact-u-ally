@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 import type { AnalyzeStage } from "@/lib/catalog/types";
 
-const STAGES: { id: "ocr" | AnalyzeStage; label: string }[] = [
+const STAGES: { id: AnalyzeStage; label: string }[] = [
   { id: "ocr", label: "OCR" },
   { id: "classify", label: "Clause segmentation" },
   { id: "load_rules", label: "Cross-checking" },

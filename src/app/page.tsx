@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,19 +14,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { PROFILES } from "@/lib/profileCopy";
 import type { AnalyzeStage } from "@/lib/catalog/types";
 
-// Validate /api/ocr responses at the boundary so a server-shape change
-// surfaces as a typed error instead of an "in" check that may misclassify.
-const ocrSuccessSchema = z.object({
-  text: z.string().min(1),
-  pages: z.number().int().nonnegative(),
-  durationMs: z.number().nonnegative(),
-});
-const ocrErrorSchema = z.object({ error: z.string().min(1) });
-type OcrSuccess = z.infer<typeof ocrSuccessSchema>;
-
-type OcrPhase = "idle" | "uploading" | "done" | "error";
-
-const STAGE_ANNOUNCEMENT: Record<"ocr" | AnalyzeStage, string> = {
+const STAGE_ANNOUNCEMENT: Record<AnalyzeStage, string> = {
   ocr: "Step 1 of 4: Extracting text from your PDF.",
   classify: "Step 2 of 4: Identifying contract type.",
   load_rules: "Step 3 of 4: Loading applicable labour-law rules.",
@@ -36,99 +23,32 @@ const STAGE_ANNOUNCEMENT: Record<"ocr" | AnalyzeStage, string> = {
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [ocrPhase, setOcrPhase] = useState<OcrPhase>("idle");
-  const [ocrError, setOcrError] = useState<string | null>(null);
-  const [ocrText, setOcrText] = useState<string>("");
   const { state: analysis, run, reset } = useAnalysisStream();
   const { profile, setProfile } = useProfile();
 
   const alertRef = useRef<HTMLDivElement>(null);
   const findingsTitleRef = useRef<HTMLDivElement>(null);
-  // Owns the in-flight OCR fetch so picking a different file mid-upload
-  // can cancel it cleanly instead of resolving onto stale state.
-  const ocrAbortRef = useRef<AbortController | null>(null);
-  // Sentinel for the OCR → analyze handoff: if the page unmounts after
-  // OCR completes but before `await run(...)` fires, we must not start
-  // a new analyze fetch.
-  const mountedRef = useRef(true);
-
-  // Tear down a pending OCR fetch on unmount so we don't leak a TCP
-  // connection or call setState after the page unmounts. Flip the
-  // mounted sentinel so submit() can short-circuit before run().
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      ocrAbortRef.current?.abort();
-      ocrAbortRef.current = null;
-    };
-  }, []);
 
   function pickFile(next: File): void {
-    ocrAbortRef.current?.abort();
-    ocrAbortRef.current = null;
     setFile(next);
-    setOcrError(null);
-    setOcrPhase("idle");
     reset();
   }
 
   async function submit(): Promise<void> {
     if (!file) return;
-    setOcrError(null);
-    setOcrPhase("uploading");
     reset();
-
-    ocrAbortRef.current?.abort();
-    const controller = new AbortController();
-    ocrAbortRef.current = controller;
-
-    let ocr: OcrSuccess;
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        body: form,
-        signal: controller.signal,
-      });
-      const raw: unknown = await response.json();
-      const success = ocrSuccessSchema.safeParse(raw);
-      if (response.ok && success.success) {
-        ocr = success.data;
-        setOcrText(ocr.text);
-        setOcrPhase("done");
-      } else {
-        const errBody = ocrErrorSchema.safeParse(raw);
-        const message = errBody.success ? errBody.data.error : `OCR failed (${response.status})`;
-        setOcrError(message);
-        setOcrPhase("error");
-        return;
-      }
-    } catch (error: unknown) {
-      if (controller.signal.aborted) return;
-      setOcrError(error instanceof Error ? error.message : "Network error");
-      setOcrPhase("error");
-      return;
-    } finally {
-      if (ocrAbortRef.current === controller) ocrAbortRef.current = null;
-    }
-
-    if (!mountedRef.current) return;
-    await run({ ocrText: ocr.text, jurisdiction: "nl" });
+    await run({ file, jurisdiction: "nl" });
   }
 
-  const trackerStage: TrackerStage = computeTrackerStage(ocrPhase, analysis.phase, analysis.stage);
-  const trackerProgress = ocrPhase === "uploading" ? 0.4 : analysis.stageProgress;
-  const isWorking = ocrPhase === "uploading" || analysis.phase === "running";
-  const showTracker = ocrPhase !== "idle";
-  const errorMessage = ocrError ?? analysis.error;
+  const trackerStage: TrackerStage = computeTrackerStage(analysis.phase, analysis.stage);
+  const trackerProgress = analysis.stageProgress;
+  const isWorking = analysis.phase === "running";
+  const showTracker = analysis.phase !== "idle";
+  const errorMessage = analysis.error;
   const showError = errorMessage !== null;
   const showFindings = analysis.clauses.length > 0 || analysis.summary !== null;
 
-  // Compose the live-region message from current state. Errors have their
-  // own role="alert" — skip duplicate announcement here.
-  const liveMessage = computeLiveMessage(ocrPhase, analysis, showError);
+  const liveMessage = computeLiveMessage(analysis, showError);
 
   // On error → focus the Alert (which already has role="alert" so it
   // also self-announces). On done → focus the Findings card title so
@@ -210,7 +130,7 @@ export default function UploadPage() {
             </div>
           </div>
           <ResultsLayout
-            ocrText={ocrText}
+            ocrText={analysis.ocrText}
             clauses={analysis.clauses}
             summary={analysis.summary}
             profile={profile}
@@ -222,25 +142,21 @@ export default function UploadPage() {
 }
 
 function computeTrackerStage(
-  ocrPhase: OcrPhase,
   analysisPhase: ReturnType<typeof useAnalysisStream>["state"]["phase"],
   analysisStage: ReturnType<typeof useAnalysisStream>["state"]["stage"],
 ): TrackerStage {
-  if (ocrPhase === "error") return "error:ocr";
   if (analysisPhase === "error") {
     // No stage in flight = transport-level failure (request never
     // reached a stage event). Bare "error" tells StageTracker to render
     // the error chrome without blaming a specific stage.
     return analysisStage ? `error:${analysisStage}` : "error";
   }
-  if (ocrPhase === "uploading") return "ocr";
-  if (analysisPhase === "running") return analysisStage ?? "classify";
+  if (analysisPhase === "running") return analysisStage ?? "ocr";
   if (analysisPhase === "done") return "done";
   return "ocr";
 }
 
 function computeLiveMessage(
-  ocrPhase: OcrPhase,
   analysis: ReturnType<typeof useAnalysisStream>["state"],
   hasError: boolean,
 ): string | null {
@@ -250,6 +166,5 @@ function computeLiveMessage(
     return `Analysis complete. ${s.totalClauses} clauses analyzed, ${s.illegalCount} illegal, ${s.exploitativeCount} exploitative.`;
   }
   if (analysis.phase === "running" && analysis.stage) return STAGE_ANNOUNCEMENT[analysis.stage];
-  if (ocrPhase === "uploading") return STAGE_ANNOUNCEMENT.ocr;
   return null;
 }

@@ -3,6 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAnalysisStream } from "./useAnalysisStream";
 
+function makeFile(seed: string): File {
+  // Smallest PDF-shaped File. The hook never inspects the bytes — only
+  // forwards them to /api/analyze — so a tiny payload is fine and the
+  // `seed` keeps each test fixture distinct.
+  return new File([seed], `${seed}.pdf`, { type: "application/pdf" });
+}
+
 function ndjsonStream(lines: readonly string[]): Response {
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -62,7 +69,7 @@ describe("useAnalysisStream", () => {
     expect(result.current.state.phase).toBe("idle");
 
     await act(async () => {
-      await result.current.run({ ocrText: "x".repeat(300) });
+      await result.current.run({ file: makeFile("x") });
     });
 
     expect(result.current.state.phase).toBe("done");
@@ -80,7 +87,7 @@ describe("useAnalysisStream", () => {
 
     const { result } = renderHook(() => useAnalysisStream());
     await act(async () => {
-      await result.current.run({ ocrText: "y".repeat(300) });
+      await result.current.run({ file: makeFile("y") });
     });
 
     expect(result.current.state.phase).toBe("error");
@@ -110,7 +117,7 @@ describe("useAnalysisStream", () => {
 
     const { result } = renderHook(() => useAnalysisStream());
     await act(async () => {
-      await result.current.run({ ocrText: "z".repeat(300) });
+      await result.current.run({ file: makeFile("z") });
     });
 
     expect(result.current.state.phase).toBe("done");
@@ -133,7 +140,7 @@ describe("useAnalysisStream", () => {
     const { result } = renderHook(() => useAnalysisStream());
 
     act(() => {
-      void result.current.run({ ocrText: "k".repeat(300) });
+      void result.current.run({ file: makeFile("k") });
     });
     await waitFor(() => expect(result.current.state.phase).toBe("running"));
 
@@ -176,7 +183,7 @@ describe("useAnalysisStream", () => {
     const { result } = renderHook(() => useAnalysisStream());
 
     act(() => {
-      void result.current.run({ ocrText: "a".repeat(300) });
+      void result.current.run({ file: makeFile("a") });
     });
     await waitFor(() => expect(result.current.state.phase).toBe("running"));
 
@@ -186,7 +193,7 @@ describe("useAnalysisStream", () => {
     await waitFor(() => expect(result.current.state.phase).toBe("idle"));
 
     await act(async () => {
-      await result.current.run({ ocrText: "b".repeat(300) });
+      await result.current.run({ file: makeFile("b") });
     });
 
     expect(result.current.state.phase).toBe("done");
@@ -198,7 +205,7 @@ describe("useAnalysisStream", () => {
 
     const { result } = renderHook(() => useAnalysisStream());
     await act(async () => {
-      await result.current.run({ ocrText: "q".repeat(300) });
+      await result.current.run({ file: makeFile("q") });
     });
 
     expect(result.current.state.phase).toBe("error");

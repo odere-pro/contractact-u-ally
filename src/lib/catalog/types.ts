@@ -115,7 +115,7 @@ export interface ClassifyResult {
 
 // --- NDJSON events emitted by /api/analyze ---
 
-export type AnalyzeStage = "classify" | "load_rules" | "analyze";
+export type AnalyzeStage = "ocr" | "classify" | "load_rules" | "analyze";
 
 export interface StageEvent {
   readonly type: "stage";
@@ -149,9 +149,15 @@ export interface SummaryEvent {
   readonly compliantCount: number;
 }
 
+export interface OcrTextEvent {
+  readonly type: "ocr_text";
+  readonly text: string;
+  readonly pages: number;
+}
+
 export interface ErrorEvent {
   readonly type: "error";
   readonly message: string;
 }
 
-export type AnalyzeEvent = StageEvent | ClauseEvent | SummaryEvent | ErrorEvent;
+export type AnalyzeEvent = StageEvent | OcrTextEvent | ClauseEvent | SummaryEvent | ErrorEvent;

@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   clauseEventSchema,
   errorEventSchema,
+  ocrTextEventSchema,
   stageEventSchema,
   summaryEventSchema,
 } from "@/lib/catalog/schemas";
@@ -17,6 +18,7 @@ export interface AnalysisState {
   readonly phase: AnalysisPhase;
   readonly stage: AnalyzeStage | null;
   readonly stageProgress: number;
+  readonly ocrText: string;
   readonly clauses: readonly ClauseEvent[];
   readonly summary: SummaryEvent | null;
   readonly error: string | null;
@@ -26,13 +28,14 @@ const INITIAL: AnalysisState = {
   phase: "idle",
   stage: null,
   stageProgress: 0,
+  ocrText: "",
   clauses: [],
   summary: null,
   error: null,
 };
 
 interface RunArgs {
-  readonly ocrText: string;
+  readonly file: File;
   readonly jurisdiction?: Jurisdiction;
   readonly typeId?: string;
 }
@@ -43,6 +46,7 @@ interface RunArgs {
 // and against an attacker-controlled proxy injecting bogus JSON).
 const serverEventSchema = z.discriminatedUnion("type", [
   stageEventSchema,
+  ocrTextEventSchema,
   clauseEventSchema,
   summaryEventSchema,
   errorEventSchema,
@@ -92,12 +96,16 @@ export function useAnalysisStream() {
 
       safeSetState(() => ({ ...INITIAL, phase: "running" }));
 
+      const form = new FormData();
+      form.append("file", args.file);
+      if (args.jurisdiction) form.append("jurisdiction", args.jurisdiction);
+      if (args.typeId) form.append("typeId", args.typeId);
+
       let response: Response;
       try {
         response = await fetch("/api/analyze", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(args),
+          body: form,
           signal: controller.signal,
         });
       } catch (err: unknown) {
@@ -182,6 +190,8 @@ function applyEvent(prev: AnalysisState, event: ServerEvent): AnalysisState {
   switch (event.type) {
     case "stage":
       return { ...prev, stage: event.stage, stageProgress: event.progress };
+    case "ocr_text":
+      return { ...prev, ocrText: event.text };
     case "clause":
       return { ...prev, clauses: [...prev.clauses, event] };
     case "summary":
