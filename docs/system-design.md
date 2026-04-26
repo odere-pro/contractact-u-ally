@@ -121,3 +121,83 @@ flowchart TD
 | Classify | Unknown contract type | Falls back to generic ruleset |
 | Stream | Anthropic disconnect | Stream closes; partial clauses remain rendered |
 | Validation | Malformed JSON line | Line dropped, stream continues |
+
+---
+
+## 3. Request path — sequence diagram
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Worker (browser)
+  participant UI as page.tsx + UploadZone
+  participant H as useAnalysisStream
+  participant E as Vercel Edge
+  participant O as /api/ocr
+  participant A as /api/analyze
+  participant P as runRiskPipeline
+  participant C as classifier + ruleLoader
+  participant M as Mistral OCR
+  participant K as Anthropic Claude
+
+  U->>UI: drop PDF
+  UI->>UI: validateUpload (MIME + magic + size)
+  UI->>E: POST /api/ocr (multipart)
+  E->>O: forward (CSP, headers)
+  O->>O: rateLimit + re-validate
+  O->>M: POST PDF bytes
+  M-->>O: { text, pages }
+  O-->>UI: 200 { text, pages, durationMs }
+
+  UI->>H: start({ ocrText, jurisdiction })
+  H->>E: POST /api/analyze (JSON)
+  E->>A: forward
+  A->>A: rateLimit + zod parse body
+  A->>P: runRiskPipeline(...)
+  P-->>H: stage classify(0)
+  P->>C: classifyContract(text)
+  C-->>P: { typeId, confidence }
+  P-->>H: stage classify(1)
+
+  P-->>H: stage load_rules(0)
+  P->>C: loadRulesForType(typeId, jurisdiction)
+  C-->>P: LoadedRuleSet
+  P-->>H: stage load_rules(1)
+
+  P-->>H: stage analyze(0)
+  P->>K: messages.stream(system, user)
+  loop for each text_delta
+    K-->>P: delta
+    P->>P: buffer → split on \n
+    P->>P: zod validate line
+    alt clause event
+      P-->>H: NDJSON clause
+      H-->>UI: append clause
+    else summary event
+      P-->>H: NDJSON summary
+      H-->>UI: render summary
+    else invalid
+      P->>P: drop
+    end
+  end
+  K-->>P: stream end
+  P-->>H: stage analyze(1)
+  P-->>H: close
+  UI->>UI: persist summary to localStorage
+  UI-->>U: report visible (< 60s target)
+```
+
+---
+
+## 4. Notes for the next iteration
+
+- **C4 layers not yet drawn:** Component diagram for `src/lib/catalog/*` and a
+  Deployment diagram (Vercel Functions + provider regions).
+- **Observability:** add structured server logs (no PII) — request id, stage,
+  duration, provider latency. Stream events already include progress markers
+  that can double as client-side timing breadcrumbs.
+- **Resilience:** wrap Anthropic call in a single retry on transient network
+  errors only — never on 4xx. Today the pipeline relies on the client to
+  retry the whole `/api/analyze` call.
+- **Caching:** OCR text for identical PDF hashes could be cached per session
+  in memory only (no disk). Out of scope until the rule engine stabilizes.
