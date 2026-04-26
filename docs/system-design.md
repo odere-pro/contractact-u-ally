@@ -1,153 +1,81 @@
-# System Design — contractact-u-ally
+# System Design
 
-This document describes the runtime architecture of the app using the C4 model
-for structure (Context, Container, Component) and D2 for the request-path
-sequence and the processing-algorithm flow. Sources for every diagram live
-next to this file under `docs/diagrams/src/`; rendered SVGs under
-`docs/diagrams/img/`.
+C4 for structure, D2 for the dynamic views. Sources in
+`docs/diagrams/src/`, rendered SVGs in `docs/diagrams/img/`.
 
-Re-render after any edit:
+Re-render:
 
 ```bash
-plantuml -tsvg -o ../img \
-  docs/diagrams/src/c4-context.puml \
-  docs/diagrams/src/c4-container.puml \
-  docs/diagrams/src/c4-component-pipeline.puml
-
+plantuml -tsvg -o ../img docs/diagrams/src/*.puml
 d2 docs/diagrams/src/algorithm-pipeline.d2  docs/diagrams/img/algorithm-pipeline.svg
 d2 docs/diagrams/src/sequence-request-path.d2 docs/diagrams/img/sequence-request-path.svg
 ```
 
 ---
 
-## 1. C4 L1 — System Context
+## Context
 
 ![System context](diagrams/img/c4-context.svg)
 
-The product has one human user (the **Worker**) and one system under our
-control (**contractact-u-ally**). Three external systems are load-bearing:
+A worker uploads a PDF and reads a risk report. Two external services do the
+heavy lifting: **Mistral** for OCR, **Anthropic Claude** for the streamed
+clause analysis. No database.
 
-- **Mistral OCR API** turns the uploaded PDF into plain text.
-- **Anthropic API** (Claude Sonnet 4.6) does the clause-by-clause legal
-  analysis and streams results back token-by-token.
-- **Vercel** hosts the app — Edge for static + headers, Functions for the
-  API routes, CDN for assets.
-
-There is no database. Nothing about the contract is persisted server-side.
-
----
-
-## 2. C4 L2 — Containers
+## Containers
 
 ![Containers](diagrams/img/c4-container.svg)
 
-Inside our system boundary:
+- **Web UI** drives the upload and renders the streamed report.
+- **`/api/ocr`** validates the upload and proxies to Mistral.
+- **`/api/analyze`** runs the pipeline and streams NDJSON back.
+- **runRiskPipeline** orchestrates classify → load rules → Claude stream.
+- **Rule Catalog** holds the rules and the zod schemas used to validate every
+  streamed line.
 
-- **Web UI** (`src/app/page.tsx`, `src/components/**`) — the landing page,
-  upload zone, stage tracker and clause list. The `useAnalysisStream` hook
-  reads the NDJSON stream and incrementally renders clauses.
-- **Browser localStorage** stores **only the rendered summary** so a refresh
-  preserves results. The full contract text is never written to it.
-- **`/api/ocr`** (`src/app/api/ocr/route.ts`) — multipart endpoint. Validates
-  MIME type, magic bytes and size (≤10MB), then proxies to Mistral.
-- **`/api/analyze`** (`src/app/api/analyze/route.ts`) — JSON in, NDJSON
-  stream out. Drives `runRiskPipeline`.
-- **runRiskPipeline** (`src/lib/pipeline/runRiskPipeline.ts`) — server-only
-  orchestrator. Owns the `ReadableStream` returned to the client.
-- **Rule Catalog** (`src/lib/catalog/*`) — classifier, rule loader, zod
-  schemas. Reads `data/labor-contracts/*` and `data/nl-labor-law.json`.
-- **rateLimit** (`src/lib/rateLimit.ts`) — per-IP token bucket (5 / 60s)
-  applied to both API routes.
+Provider keys live only on the server. Both API routes are rate-limited.
 
-Provider keys (`MISTRAL_API_KEY`, `ANTHROPIC_API_KEY`) are read only inside
-the server modules; nothing in this layer ships to the client bundle.
+## Pipeline components
 
----
+![Pipeline](diagrams/img/c4-component-pipeline.svg)
 
-## 3. C4 L3 — Pipeline components
+Inside `runRiskPipeline`:
 
-![Pipeline components](diagrams/img/c4-component-pipeline.svg)
-
-Zooming into `runRiskPipeline` and the Rule Catalog:
-
-- **`runRiskPipeline`** is the orchestrator. It emits stage progress events,
-  then iterates the Anthropic stream and validates each NDJSON line.
-- **`defaultClaudeStream`** wraps `getAnthropic().messages.stream(...)` and
-  yields text deltas. Tests inject a fake factory.
-- **`streamEvents`** encodes typed events (`stage`, `clause`, `summary`,
-  `error`) as NDJSON `Uint8Array` chunks the route handler can pipe.
-- **`prompts`** builds the system prompt from the loaded rule set and the
-  curated risk examples in `data/risk-examples`.
-- **`classifier`** detects the contract type (e.g. fixed-term vs permanent).
-- **`ruleLoader`** loads the rules for the detected type and jurisdiction.
-- **`schemas`** holds the zod schemas used to validate the request payload
-  and every streamed line — a malformed line is dropped, the stream survives.
+- **Orchestrator** owns the response stream and the stage progress events.
+- **classifier** picks the contract type from the OCR text.
+- **ruleLoader** loads the rule set for that type and jurisdiction.
+- **prompts** builds the system prompt from the rules + risk examples.
+- **zod schemas** validate every JSON line emitted by Claude; bad lines are
+  dropped, the stream survives.
 
 ---
 
-## 4. Algorithm — how a contract is processed
+## Algorithm
 
-![Algorithm flow](diagrams/img/algorithm-pipeline.svg)
+![Algorithm](diagrams/img/algorithm-pipeline.svg)
 
-End-to-end flow with both the client and the server lanes:
+`Upload → OCR → Classify → Load rules → Build prompt → Claude stream`. Every
+line Claude emits is zod-validated; valid lines flush as NDJSON, invalid
+lines are dropped. The summary line ends the stream.
 
-1. **Client validation** — UploadZone checks MIME, magic bytes and size before
-   any network call.
-2. **Server validation** — `/api/ocr` re-runs the same checks plus rate
-   limiting; failure returns a 4xx JSON error and **never echoes** the
-   filename or content.
-3. **OCR** — `runMistralOcr` returns `{ text, pages, durationMs }`.
-4. **Analyze request** — the client posts `ocrText` (and optionally
-   `jurisdiction`, `typeId`) to `/api/analyze`.
-5. **Pipeline stages** — `runRiskPipeline` emits `stage` events around three
-   phases: `classify`, `load_rules`, `analyze` (each as `progress: 0` then
-   `progress: 1`).
-6. **Streaming analysis** — Anthropic `messages.stream` yields `text_delta`
-   events. The pipeline buffers, splits on `\n`, and zod-validates each line
-   against `clauseEventSchema` or `summaryEventSchema`.
-7. **Per-line dispatch** — valid lines are encoded and flushed to the client;
-   invalid lines are dropped silently so a single bad token cannot break the
-   stream.
-8. **Persist summary** — once the stream closes, the UI writes the rendered
-   summary (not the contract) to `localStorage`.
+| Stage      | Failure                | Behavior                              |
+| ---------- | ---------------------- | ------------------------------------- |
+| Upload     | Wrong MIME / oversized | 4xx JSON, no echo of input            |
+| OCR        | Mistral 5xx / timeout  | 5xx surfaced, no retry-storm          |
+| Classify   | Unknown type           | Falls back to a generic ruleset       |
+| Stream     | Anthropic disconnect   | Stream closes; partial output remains |
+| Validation | Malformed line         | Dropped, stream continues             |
 
-**Why streaming end-to-end** — Workers see clauses appear as soon as the
-model emits them. NDJSON is trivially parseable in the browser without a
-streaming JSON parser, and per-line validation contains corruption.
+## Request path
 
-**Failure modes**
+![Sequence](diagrams/img/sequence-request-path.svg)
 
-| Stage      | Failure                | Behavior                                     |
-| ---------- | ---------------------- | -------------------------------------------- |
-| Upload     | Wrong MIME / oversized | 4xx JSON, no echo of filename                |
-| OCR        | Mistral 5xx / timeout  | 5xx surfaced to client, no retry-storm       |
-| Classify   | Unknown contract type  | Falls back to a generic ruleset              |
-| Stream     | Anthropic disconnect   | Stream closes; partial clauses stay rendered |
-| Validation | Malformed JSON line    | Line dropped, stream continues               |
+One full session: PDF upload → OCR → analyze request → stage events →
+streamed clauses → summary → close.
 
 ---
 
-## 5. Request path — sequence
+## Next
 
-![Request path sequence](diagrams/img/sequence-request-path.svg)
-
-The numbered messages walk through one full session: PDF drop → OCR → JSON
-analyze → streamed NDJSON → rendered report. The streaming `loop` block
-captures the inner cycle: each `text_delta` is buffered, split into a line,
-zod-validated, and dispatched as either a clause event, a summary event, or
-silently dropped.
-
----
-
-## 6. Notes for the next iteration
-
-- **Deployment view (C4 L4):** map containers to Vercel Functions and
-  external provider regions (Mistral EU, Anthropic).
-- **Observability:** structured server logs (no PII) — request id, stage,
-  duration, provider latency. The existing `stage` events already serve as
-  client-side timing breadcrumbs.
-- **Resilience:** wrap the Anthropic call in a single retry on transient
-  network errors — never on 4xx. Today the client retries the full
-  `/api/analyze` request.
-- **Caching:** OCR text for identical PDF hashes could be cached per session
-  in memory only (no disk). Out of scope until the rule engine stabilizes.
+- C4 L4 deployment view (Vercel Functions + provider regions).
+- One-shot retry on transient Anthropic errors.
+- Structured server logs (no PII): request id, stage, duration.

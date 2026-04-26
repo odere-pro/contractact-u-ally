@@ -1,68 +1,25 @@
-# contractact-u-ally — Processing algorithm (D2 flowchart)
+# contractact-u-ally — Processing algorithm (horizontal)
 # Render: d2 docs/diagrams/src/algorithm-pipeline.d2 docs/diagrams/img/algorithm-pipeline.svg
 
-direction: down
+direction: right
 
-client: "Browser" {
-  drop: "User drops PDF\n(UploadZone)"
-  validate: "Client validation\nMIME + magic + size" {shape: diamond}
-  err_client: "Inline error\n(no network call)"
-  upload: "POST multipart → /api/ocr"
-  receive_text: "Receive ocrText"
-  start_analyze: "POST JSON → /api/analyze\n{ ocrText, jurisdiction, typeId? }"
-  render: "Render ClauseList + Summary"
-  persist: "Persist summary\nto localStorage"
-}
+upload: "Upload PDF\n/api/ocr"
+ocr: "OCR\n(Mistral)"
+classify: "Classify\ncontract type"
+rules: "Load rules\nfor type + jurisdiction"
+prompt: "Build prompt"
+stream: "Claude stream\n(text deltas)"
+validate: "Validate line\n(zod)" {shape: diamond}
+emit: "Emit NDJSON\n(clause / summary)"
+done: "Stream end"
 
-server: "Server (Next.js Route Handlers + runRiskPipeline)" {
-  validate_server: "rateLimit + MIME + size + magic" {shape: diamond}
-  err_server: "4xx JSON error\n(no echo of input)"
-  ocr: "runMistralOcr\nPDF bytes → text + pages"
-  classify_0: "Stage classify(0)"
-  classify: "classifyContract\n(heuristic + keywords)"
-  classify_1: "Stage classify(1)"
-  rules_0: "Stage load_rules(0)"
-  rules: "loadRulesForType\n(jurisdiction laws + contract rules)"
-  rules_1: "Stage load_rules(1)"
-  analyze_0: "Stage analyze(0)"
-  build_prompt: "buildAnalysisSystemPrompt\n+ loadRiskExamples"
-  stream: "Anthropic messages.stream\nclaude-sonnet-4-6, max 8192 tokens"
-  parse: "For each text_delta:\nbuffer → JSON.parse line"
-  zod: "zod validate" {shape: diamond}
-  emit_clause: "Encode NDJSON clause\n→ flush"
-  emit_summary: "Encode NDJSON summary\n→ flush"
-  drop: "Drop line silently"
-  analyze_1: "Stage analyze(1) + close"
-}
-
-client.drop -> client.validate
-client.validate -> client.err_client: fail
-client.validate -> client.upload: ok
-
-client.upload -> server.validate_server
-server.validate_server -> server.err_server: fail
-server.validate_server -> server.ocr: ok
-server.ocr -> client.receive_text
-
-client.receive_text -> client.start_analyze
-client.start_analyze -> server.classify_0
-server.classify_0 -> server.classify
-server.classify -> server.classify_1
-server.classify_1 -> server.rules_0
-server.rules_0 -> server.rules
-server.rules -> server.rules_1
-server.rules_1 -> server.analyze_0
-server.analyze_0 -> server.build_prompt
-server.build_prompt -> server.stream
-server.stream -> server.parse
-server.parse -> server.zod
-server.zod -> server.emit_clause: clause
-server.zod -> server.emit_summary: summary
-server.zod -> server.drop: invalid
-server.emit_clause -> server.parse
-server.drop -> server.parse
-server.emit_summary -> server.analyze_1
-
-server.emit_clause -> client.render
-server.emit_summary -> client.render
-client.render -> client.persist
+upload -> ocr
+ocr -> classify
+classify -> rules
+rules -> prompt
+prompt -> stream
+stream -> validate
+validate -> emit: ok
+validate -> stream: drop\n(invalid)
+emit -> stream: next delta
+emit -> done: summary
