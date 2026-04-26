@@ -42,10 +42,12 @@ export function SimplifiedPane({
       aria-label="Plain-language explanation"
       className="flex flex-col gap-3 p-4"
     >
-      <header className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-        For you · {MIGRANT_WORKER_LABEL}
+      <header className="flex flex-col gap-1">
+        <span className="text-muted-foreground text-[10px] font-semibold tracking-widest uppercase">
+          For you · {MIGRANT_WORKER_LABEL}
+        </span>
+        <p className="text-muted-foreground text-xs leading-relaxed">{MIGRANT_WORKER_TAGLINE}</p>
       </header>
-      <p className="text-muted-foreground text-xs">{MIGRANT_WORKER_TAGLINE}</p>
 
       {allClear && (
         <Card className="border-ok border-2">
