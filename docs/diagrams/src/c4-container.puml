@@ -1,0 +1,35 @@
+@startuml c4-container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.10.0/C4_Container.puml
+
+title contractact-u-ally — Containers (C4 L2)
+
+Person(worker, "Worker", "Uploads PDF, reads report")
+
+System_Boundary(app, "contractact-u-ally") {
+  Container(spa, "Web UI", "Next.js 16 App Router, React 19, Tailwind v4, shadcn/ui", "Landing page, UploadZone, StageTracker, ClauseList; useAnalysisStream hook reads NDJSON")
+  ContainerDb(ls, "Browser localStorage", "Web Storage", "Holds rendered summary only — never full contract text")
+  Container(ocrApi, "/api/ocr", "Next.js Route Handler, Node runtime", "Validates multipart upload (MIME, magic bytes, ≤10MB), proxies to Mistral OCR")
+  Container(analyzeApi, "/api/analyze", "Next.js Route Handler, Node runtime", "JSON in, NDJSON stream out; runs the risk pipeline")
+  Container(pipeline, "runRiskPipeline", "Server-only TS module (src/lib/pipeline)", "Orchestrates classify → loadRules → Claude stream → emit NDJSON")
+  Container(catalog, "Rule Catalog", "Server-only TS module (src/lib/catalog)", "classifier, ruleLoader, zod schemas; reads data/labor-contracts/* + data/nl-labor-law.json")
+  Container(rateLimit, "rateLimit", "Server-only TS module", "Per-IP token bucket (5 / 60s)")
+}
+
+System_Ext(mistral, "Mistral OCR API", "External — PDF → text")
+System_Ext(anthropic, "Anthropic API", "External — claude-sonnet-4-6 streaming")
+
+Rel(worker, spa, "HTTPS")
+Rel(spa, ocrApi, "POST PDF (multipart)", "HTTPS")
+Rel(spa, analyzeApi, "POST { ocrText, jurisdiction, typeId? }", "HTTPS / NDJSON stream")
+Rel(spa, ls, "Persist summary on completion", "Web Storage API")
+
+Rel(ocrApi, rateLimit, "check")
+Rel(analyzeApi, rateLimit, "check")
+Rel(ocrApi, mistral, "PDF bytes", "HTTPS")
+Rel(analyzeApi, pipeline, "run(ocrText, ...)")
+Rel(pipeline, catalog, "classifyContract / loadRulesForType")
+Rel(pipeline, anthropic, "messages.stream(system, user)", "HTTPS / SSE")
+Rel(pipeline, analyzeApi, "ReadableStream of NDJSON events")
+
+SHOW_LEGEND()
+@enduml

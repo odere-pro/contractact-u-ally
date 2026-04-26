@@ -34,3 +34,30 @@ control (**contractact-u-ally**). Three external systems are load-bearing:
   API routes, CDN for assets.
 
 There is no database. Nothing about the contract is persisted server-side.
+
+---
+
+## 2. C4 L2 — Containers
+
+![Containers](diagrams/img/c4-container.svg)
+
+Inside our system boundary:
+
+- **Web UI** (`src/app/page.tsx`, `src/components/**`) — the landing page,
+  upload zone, stage tracker and clause list. The `useAnalysisStream` hook
+  reads the NDJSON stream and incrementally renders clauses.
+- **Browser localStorage** stores **only the rendered summary** so a refresh
+  preserves results. The full contract text is never written to it.
+- **`/api/ocr`** (`src/app/api/ocr/route.ts`) — multipart endpoint. Validates
+  MIME type, magic bytes and size (≤10MB), then proxies to Mistral.
+- **`/api/analyze`** (`src/app/api/analyze/route.ts`) — JSON in, NDJSON
+  stream out. Drives `runRiskPipeline`.
+- **runRiskPipeline** (`src/lib/pipeline/runRiskPipeline.ts`) — server-only
+  orchestrator. Owns the `ReadableStream` returned to the client.
+- **Rule Catalog** (`src/lib/catalog/*`) — classifier, rule loader, zod
+  schemas. Reads `data/labor-contracts/*` and `data/nl-labor-law.json`.
+- **rateLimit** (`src/lib/rateLimit.ts`) — per-IP token bucket (5 / 60s)
+  applied to both API routes.
+
+Provider keys (`MISTRAL_API_KEY`, `ANTHROPIC_API_KEY`) are read only inside
+the server modules; nothing in this layer ships to the client bundle.
