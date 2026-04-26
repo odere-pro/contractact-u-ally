@@ -300,6 +300,10 @@ function AskComposeDialog({
             aria-label={`Ask a question about clause ${clauseId}`}
             data-testid={`clause-card-ask-input-${clauseId}`}
             maxLength={1000}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            name={`ask-${clauseId}`}
             className={cn(
               "border-border bg-background text-foreground placeholder:text-muted-foreground/70",
               "h-10 w-full rounded-md border px-3 text-sm",
