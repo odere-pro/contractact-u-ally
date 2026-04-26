@@ -231,8 +231,7 @@ const MOCK_OCR_TEXT = [
  * contract-pane scroll/highlight still works in mock mode.
  */
 export function isMockOnlyMode(): boolean {
-  const key = process.env.ANTHROPIC_API_KEY;
-  return !key || key.trim() === "";
+  return false;
 }
 
 export interface MockOcrResult {
