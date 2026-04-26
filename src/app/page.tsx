@@ -10,11 +10,9 @@ import { StageTracker, type TrackerStage } from "@/components/organisms/StageTra
 import { ResultsLayout } from "@/components/organisms/ResultsLayout";
 import { LanguageSwitcher } from "@/components/molecules/LanguageSwitcher";
 import { LiveRegion } from "@/components/molecules/LiveRegion";
-import { Badge } from "@/components/ui/badge";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
 import { useEtaSeconds } from "@/hooks/useEtaSeconds";
 import { useTranslatedAnalysis } from "@/hooks/useTranslatedAnalysis";
-import { MIGRANT_WORKER_LABEL } from "@/lib/profileCopy";
 import type { AnalyzeStage, Jurisdiction } from "@/lib/catalog/types";
 
 const JURISDICTION: Jurisdiction = "nl";
@@ -136,10 +134,6 @@ export default function UploadPage() {
             pending={translated.pending}
             onChange={translated.setLanguage}
           />
-          {/* Static audience indicator — the product currently ships
-              for migrant workers only. Non-interactive: no role, no
-              click handler. */}
-          <Badge aria-label={`Audience: ${MIGRANT_WORKER_LABEL}`}>{MIGRANT_WORKER_LABEL}</Badge>
         </div>
 
         {translated.error && (
