@@ -140,7 +140,7 @@ export default function UploadPage() {
   }
 
   return (
-    <section className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-12">
+    <section className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-6 overflow-y-auto px-6 py-12">
       <LiveRegion message={liveMessage} />
 
       <header className="flex flex-col gap-3">

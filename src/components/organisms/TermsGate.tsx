@@ -36,7 +36,12 @@ export function TermsGate({ children }: TermsGateProps) {
           neither flash an unblocked app (declined-but-not-yet-shown)
           nor flash an open modal that immediately closes for a
           previously-accepted user. */}
-      <div aria-hidden={!hydrated} className={hydrated ? undefined : "opacity-0"}>
+      <div
+        aria-hidden={!hydrated}
+        className={
+          hydrated ? "flex min-h-0 flex-1 flex-col" : "flex min-h-0 flex-1 flex-col opacity-0"
+        }
+      >
         {children}
       </div>
       {hydrated && declined && !accepted && (
