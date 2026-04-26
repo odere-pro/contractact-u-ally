@@ -58,3 +58,66 @@ flowchart LR
   the rendered summary so a refresh keeps results.
 - Provider keys (`MISTRAL_API_KEY`, `ANTHROPIC_API_KEY`) are server-only.
 - Both routes are rate-limited (5 req / 60s per IP, token bucket).
+
+---
+
+## 2. Processing algorithm (how a contract is analyzed)
+
+```mermaid
+flowchart TD
+  A[User drops PDF in UploadZone] --> B{Client validation<br/>MIME + magic bytes + size}
+  B -- fail --> B1[Show inline error<br/>no network call]
+  B -- ok --> C[POST multipart → /api/ocr]
+
+  C --> D{Server validation<br/>rateLimit + MIME + size + magic}
+  D -- fail --> D1[4xx JSON error<br/>no echo of input]
+  D -- ok --> E[runMistralOcr<br/>PDF bytes → plain text + pages]
+
+  E --> F[Client receives ocrText]
+  F --> G[POST JSON → /api/analyze<br/>ocrText + jurisdiction + typeId?]
+
+  G --> H[runRiskPipeline orchestrator]
+
+  H --> H1[Stage: classify<br/>emit progress 0]
+  H1 --> H2[classifyContract<br/>heuristic + keywords]
+  H2 --> H3[Stage: classify progress 1]
+
+  H3 --> I1[Stage: load_rules progress 0]
+  I1 --> I2[loadRulesForType<br/>read jurisdiction laws + contract rules]
+  I2 --> I3[Stage: load_rules progress 1]
+
+  I3 --> J1[Stage: analyze progress 0]
+  J1 --> J2[Build system prompt:<br/>contract type + rule set + risk examples]
+  J2 --> J3[Anthropic messages.stream<br/>claude-sonnet-4-6, max 8192 tokens]
+
+  J3 --> K[For each text_delta:<br/>buffer until newline → JSON.parse line]
+  K --> L{Validate with zod<br/>clauseEventSchema or summaryEventSchema}
+  L -- clause --> L1[Encode NDJSON clause event<br/>flush to client]
+  L -- summary --> L2[Encode NDJSON summary event<br/>flush to client]
+  L -- invalid --> L3[Drop line silently<br/>do not break stream]
+
+  L1 --> K
+  L2 --> M[Stage: analyze progress 1<br/>close stream]
+  L3 --> K
+
+  M --> N[Client useAnalysisStream<br/>renders ClauseList + Summary]
+  N --> O[Persist summary to localStorage]
+```
+
+**Why streaming end-to-end**
+
+- Worker sees clauses appear as soon as Claude emits them — perceived latency
+  matters more than total wall clock.
+- NDJSON (one JSON object per line) is trivially parseable in the browser
+  without a streaming JSON parser.
+- zod validation per-line means a corrupted line cannot poison the UI; it is
+  dropped, the next line still renders.
+
+**Failure modes**
+| Stage | Failure | Behavior |
+|---|---|---|
+| Upload | Wrong MIME / oversized | 4xx JSON, never echo filename |
+| OCR | Mistral 5xx / timeout | 5xx surfaced to client, no retry-storm |
+| Classify | Unknown contract type | Falls back to generic ruleset |
+| Stream | Anthropic disconnect | Stream closes; partial clauses remain rendered |
+| Validation | Malformed JSON line | Line dropped, stream continues |
