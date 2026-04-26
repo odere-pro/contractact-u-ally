@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { ClauseEvent } from "@/lib/catalog/types";
 
-export type VoiceState = "idle" | "listening" | "processing" | "response" | "error";
+export type VoiceState = "idle" | "listening" | "processing" | "streaming" | "response" | "error";
 export type ModelState = "none" | "building" | "ready" | "failed";
 
 export interface UseVoiceOptions {
@@ -24,6 +24,7 @@ export interface UseVoiceReturn {
   buildModel: () => Promise<void>;
   startListening: (clauseId?: string) => Promise<void>;
   stopAndProcess: () => Promise<void>;
+  askWithText: (clauseId: string, question: string) => Promise<void>;
   cancel: () => void;
   dismiss: () => void;
 }
@@ -38,6 +39,9 @@ export function useVoice({ jurisdiction, clauses }: UseVoiceOptions): UseVoiceRe
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  // Lets `dismiss()` cut off an in-flight SSE answer when the user
+  // closes the dialog mid-stream.
+  const answerAbortRef = useRef<AbortController | null>(null);
 
   // Stable refs so recorder.onstop closure always reads current values.
   const jurisdictionRef = useRef(jurisdiction);
@@ -78,6 +82,74 @@ export function useVoice({ jurisdiction, clauses }: UseVoiceOptions): UseVoiceRe
       }
     } catch {
       setModelState("failed");
+    }
+  }, []);
+
+  // Streams SSE deltas from /api/answer into local `answer` state.
+  // Resolves on `done`; rejects on `error` or transport failure.
+  const streamAnswer = useCallback(async (question: string): Promise<void> => {
+    const controller = new AbortController();
+    answerAbortRef.current = controller;
+
+    const res = await fetch("/api/answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        jurisdiction: jurisdictionRef.current,
+        clauses: clausesRef.current,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok || !res.body) throw new Error("answer_failed");
+
+    setVoiceState("streaming");
+    setAnswer("");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE frames are separated by a blank line; parse complete frames
+        // and leave the partial tail in `buffer` for the next chunk.
+        let separator = buffer.indexOf("\n\n");
+        while (separator !== -1) {
+          const rawFrame = buffer.slice(0, separator);
+          buffer = buffer.slice(separator + 2);
+          separator = buffer.indexOf("\n\n");
+
+          let event = "message";
+          let data = "";
+          for (const line of rawFrame.split("\n")) {
+            if (line.startsWith("event:")) event = line.slice(6).trim();
+            else if (line.startsWith("data:")) data += line.slice(5).trim();
+          }
+          if (!data) continue;
+
+          if (event === "delta") {
+            try {
+              const { text } = JSON.parse(data) as { text?: string };
+              if (text) setAnswer((prev) => prev + text);
+            } catch {
+              /* ignore malformed frame */
+            }
+          } else if (event === "done") {
+            return;
+          } else if (event === "error") {
+            throw new Error("stream_error");
+          }
+        }
+      }
+    } finally {
+      answerAbortRef.current = null;
     }
   }, []);
 
@@ -126,25 +198,53 @@ export function useVoice({ jurisdiction, clauses }: UseVoiceOptions): UseVoiceRe
 
     const form = new FormData();
     form.set("audio", blob, "recording.webm");
-    form.set(
-      "context",
-      JSON.stringify({ jurisdiction: jurisdictionRef.current, clauses: clausesRef.current }),
-    );
     if (customModelIdRef.current) {
       form.set("customModelId", customModelIdRef.current);
     }
 
+    let sttTranscript = "";
     try {
       const res = await fetch("/api/transcribe", { method: "POST", body: form });
       if (!res.ok) throw new Error("transcribe_failed");
-      const data = (await res.json()) as { transcript?: string; reasoning?: string };
-      setTranscript(data.transcript ?? "");
-      setAnswer(data.reasoning ?? data.transcript ?? "");
-      setVoiceState("response");
+      const data = (await res.json()) as { transcript?: string };
+      sttTranscript = (data.transcript ?? "").trim();
+      if (!sttTranscript) throw new Error("empty_transcript");
+      setTranscript(sttTranscript);
     } catch {
       setVoiceState("error");
+      return;
     }
-  }, []);
+
+    try {
+      await streamAnswer(sttTranscript);
+      setVoiceState("response");
+    } catch (err) {
+      // Abort means the user dismissed mid-stream — leave state as-is.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setVoiceState("error");
+    }
+  }, [streamAnswer]);
+
+  const askWithText = useCallback(
+    async (clauseId: string, question: string) => {
+      const trimmed = question.trim();
+      if (!trimmed) return;
+
+      setActiveClauseId(clauseId);
+      setTranscript(trimmed);
+      setAnswer("");
+      setVoiceState("processing");
+
+      try {
+        await streamAnswer(trimmed);
+        setVoiceState("response");
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setVoiceState("error");
+      }
+    },
+    [streamAnswer],
+  );
 
   const cancel = useCallback(() => {
     const recorder = recorderRef.current;
@@ -157,11 +257,15 @@ export function useVoice({ jurisdiction, clauses }: UseVoiceOptions): UseVoiceRe
       }
       recorderRef.current = null;
     }
+    answerAbortRef.current?.abort();
+    answerAbortRef.current = null;
     setActiveClauseId(null);
     setVoiceState("idle");
   }, []);
 
   const dismiss = useCallback(() => {
+    answerAbortRef.current?.abort();
+    answerAbortRef.current = null;
     setTranscript("");
     setAnswer("");
     setActiveClauseId(null);
@@ -178,6 +282,7 @@ export function useVoice({ jurisdiction, clauses }: UseVoiceOptions): UseVoiceRe
     buildModel,
     startListening,
     stopAndProcess,
+    askWithText,
     cancel,
     dismiss,
   };
