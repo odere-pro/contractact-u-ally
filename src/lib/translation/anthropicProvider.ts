@@ -78,15 +78,6 @@ export const anthropicTranslationProvider: TranslationProvider = {
         { timeout: TRANSLATE_TIMEOUT_MS },
       );
     } catch (err) {
-      if (isAnthropicCreditError(err)) {
-        throw new TranslationUnavailableError("Anthropic credit exhausted", NAME);
-      }
-      if (isAnthropicAuthError(err)) {
-        throw new TranslationUnavailableError("Anthropic API key missing or invalid", NAME);
-      }
-      if (isAnthropicTimeoutError(err)) {
-        throw new TranslationUnavailableError("Anthropic translation timed out", NAME);
-      }
       throw err;
     }
 

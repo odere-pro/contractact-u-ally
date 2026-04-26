@@ -102,9 +102,6 @@ class AnthropicCreditPipelineError extends Error {
   override readonly name = "AnthropicCreditPipelineError";
 }
 
-const CREDIT_ERROR_MESSAGE =
-  "Anthropic API credit balance is too low. Please top up credits and try again.";
-
 /**
  * Orchestrate ocr → classify → load rules → Claude stream → emit NDJSON.
  *
@@ -193,9 +190,6 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
             }
           }
         } catch (err) {
-          if (isAnthropicCreditError(err)) {
-            throw new AnthropicCreditPipelineError(CREDIT_ERROR_MESSAGE);
-          }
           throw err;
         }
         if (alive && buffer.trim()) {
@@ -247,10 +241,6 @@ function sanitizeErrorMessage(err: unknown): string {
   if (err instanceof AnthropicCreditPipelineError) {
     console.warn("runRiskPipeline: Anthropic credit balance too low");
     return err.message;
-  }
-  if (isAnthropicCreditError(err)) {
-    console.warn("runRiskPipeline: Anthropic credit balance too low");
-    return CREDIT_ERROR_MESSAGE;
   }
   if (err instanceof OcrPipelineError) return safeDomainMessage(err.message, "OCR pipeline error");
   if (err instanceof ContractTextRangeError) {
