@@ -29,7 +29,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     return jsonError(429, "Too many requests.");
   }
 
-  const apiKey = process.env.RESON8_API_KEY;
+  // Trim — Vercel env values pasted with trailing whitespace/newlines cause
+  // fetch() to throw `TypeError: Invalid character in header content` instead
+  // of a clean 401, surfacing as an opaque "service unreachable" in the UI.
+  const apiKey = process.env.RESON8_API_KEY?.trim();
   if (!apiKey) return jsonError(503, "Transcription service not configured");
 
   let form: FormData;
@@ -60,6 +63,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     sttUrl.searchParams.set("custom_model_id", customModelId);
   }
 
+  console.log("[reson8.transcribe] →", {
+    url: sttUrl.toString(),
+    audioBytes: audio.size,
+    audioType: audio.type,
+    customModelId: customModelId ?? null,
+    keyLen: apiKey.length,
+  });
+
   let reson8Res: Response;
   try {
     // AbortSignal.timeout prevents the route from hanging if Reson8 is slow.
@@ -74,6 +85,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     });
   } catch (err) {
     const isTimeout = err instanceof Error && err.name === "TimeoutError";
+    console.error("[reson8.transcribe] fetch threw", {
+      isTimeout,
+      name: err instanceof Error ? err.name : typeof err,
+      message: err instanceof Error ? err.message : String(err),
+      cause: err instanceof Error ? err.cause : undefined,
+    });
     return jsonError(
       502,
       isTimeout ? "Transcription service timed out" : "Transcription service unreachable",
@@ -82,13 +99,18 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   if (!reson8Res.ok) {
     const errText = await reson8Res.text().catch(() => "");
-    console.error("Reson8 STT error:", reson8Res.status, errText);
+    console.error("[reson8.transcribe] non-OK", reson8Res.status, errText);
     const msg =
       reson8Res.status === 401
         ? "Invalid transcription API key"
         : `Transcription service error ${reson8Res.status}`;
     return jsonError(502, msg);
   }
+
+  console.log("[reson8.transcribe] ← OK", {
+    status: reson8Res.status,
+    elapsedMs: Date.now() - t0,
+  });
 
   let reson8Json: unknown;
   try {
