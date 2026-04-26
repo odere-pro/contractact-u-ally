@@ -1,0 +1,64 @@
+"use client";
+
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { SectionRef } from "@/components/atoms/SectionRef";
+import { SeverityBadge } from "@/components/molecules/SeverityBadge";
+import { Card, CardContent } from "@/components/ui/card";
+import { PROFILE_LABEL, type Profile } from "@/lib/profileCopy";
+import { severityOf } from "@/lib/severity";
+import type { ClauseEvent } from "@/lib/catalog/types";
+
+interface WhyDrawerProps {
+  readonly clause: ClauseEvent | null;
+  readonly profile: Profile;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+}
+
+// Side drawer that explains a single clause's risk: severity, plain-
+// language rationale, and the rule citation. The same legal source
+// stays anchored across profiles — only tone shifts.
+export function WhyDrawer({ clause, profile, open, onOpenChange }: WhyDrawerProps) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      {clause && (
+        <SheetContent
+          title="Why is this a risk?"
+          description={
+            <span>
+              <SectionRef id={clause.id} /> · {clause.title}
+            </span>
+          }
+        >
+          <div className="flex items-center gap-2">
+            <SeverityBadge severity={severityOf(clause)} />
+          </div>
+          <p className="text-sm">{clause.explanation}</p>
+          {clause.action && (
+            <p className="text-sm">
+              <strong>What to do:</strong> {clause.action}
+            </p>
+          )}
+          {clause.citation && (
+            <Card>
+              <CardContent className="flex flex-col gap-1 p-4">
+                <span className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Source
+                </span>
+                <span className="font-semibold">{clause.citation.label}</span>
+                <span className="text-muted-foreground text-xs">{clause.citation.article}</span>
+                <span className="text-muted-foreground text-[11px]">
+                  Supplied by {clause.citation.source}
+                </span>
+              </CardContent>
+            </Card>
+          )}
+          <div className="bg-secondary/40 mt-auto flex items-center gap-2 rounded-md p-2 text-xs">
+            <span className="font-semibold">Reading level:</span>
+            <span>{PROFILE_LABEL[profile]}</span>
+          </div>
+        </SheetContent>
+      )}
+    </Sheet>
+  );
+}

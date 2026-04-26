@@ -22,12 +22,16 @@ interface ClauseListProps {
 // not a silent visual regression.
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
+// Map domain status → semantic severity variant. Severity tokens are
+// declared in src/app/globals.css; keep this map in sync with the
+// `critical|medium|low|ok` cva variants on Badge so a rename surfaces
+// as a compile error rather than a silent visual regression.
 const STATUS_VARIANT: Record<ClauseStatus, BadgeVariant> = {
-  illegal: "destructive",
-  exploitative: "default",
-  permit_conflict: "destructive",
-  compliant: "secondary",
-  unchecked: "outline",
+  illegal: "critical",
+  permit_conflict: "critical",
+  exploitative: "medium",
+  unchecked: "low",
+  compliant: "ok",
 };
 
 const STATUS_LABEL: Record<ClauseStatus, string> = {
