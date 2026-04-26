@@ -45,10 +45,11 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
   const illegalCount = summary?.illegalCount ?? 0;
 
   const handleSelectClause = useCallback((id: string): void => {
-    // Bump the nonce on every click so the scroll effects in
-    // ContractPreview / SimplifiedPane re-run even when the user
-    // re-clicks the already-active clause.
-    setActiveId(id);
+    // Toggle expansion: clicking the active card collapses it.
+    // Otherwise expand the clicked card and bump the nonce so the
+    // scroll effects in ContractPreview / SimplifiedPane re-run even
+    // when the user re-expands a clause they had just collapsed.
+    setActiveId((prev) => (prev === id ? null : id));
     setSelectionNonce((n) => n + 1);
   }, []);
 
@@ -67,13 +68,7 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[260px_minmax(520px,1fr)_400px]">
         <div className="border-border min-h-0 overflow-y-auto border-b lg:border-r lg:border-b-0">
-          <RiskRail
-            clauses={displayClauses}
-            activeId={activeId}
-            filter={filter}
-            onSelectClause={handleSelectClause}
-            onToggleSeverity={handleToggleSeverity}
-          />
+          <RiskRail filter={filter} onToggleSeverity={handleToggleSeverity} />
         </div>
         <div className="bg-secondary/30 min-h-0">
           <ContractPreview
