@@ -5,8 +5,6 @@ import { DEFAULT_FILTER, type SeverityFilter } from "@/lib/clauseFilters";
 import { SEVERITY_LABEL, type Severity } from "@/lib/severity";
 import { cn } from "@/lib/utils";
 
-// Severities the rail surfaces. OK is intentionally excluded — compliant
-// clauses are noise in a "what to fix" UI.
 const VISIBLE_SEVERITIES: readonly Severity[] = ["critical", "medium", "low"];
 
 interface RiskRailProps {
