@@ -3,7 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 import { getAnthropic } from "@/lib/anthropicClient";
-import { isAnthropicCreditError } from "@/lib/anthropicFallback";
+import { isAnthropicCreditError } from "@/lib/anthropicErrors";
 
 import {
   TranslationUnavailableError,
@@ -47,8 +47,8 @@ function buildSystemPrompt(targetLang: TranslateTargetLang): string {
 
 // Calls Haiku, parses + realigns the response. Throws
 // TranslationUnavailableError on credit exhaustion or unparseable model
-// output so the chain can fall through to a mock provider — never returns
-// source text under an NL/SV pill.
+// output so the route can map it to a 503 — never returns source text
+// silently under an NL/SV pill.
 export const anthropicTranslationProvider: TranslationProvider = {
   name: NAME,
   async translate(
