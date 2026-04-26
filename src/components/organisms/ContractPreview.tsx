@@ -34,17 +34,23 @@ export function ContractPreview({
   // re-clicking the already-active clause still scrolls. We compute the
   // scroll offset against the local container rather than relying on
   // Element.scrollIntoView, which interacts unpredictably with the
-  // nested overflow containers in the 3-pane layout.
+  // nested overflow containers in the 3-pane layout. requestAnimationFrame
+  // delays the measurement until after layout settles (e.g. when the
+  // simplified pane has just expanded a card and reflowed siblings).
   useEffect(() => {
     const container = scrollRef.current;
     if (!activeId || !container) return;
-    const el = container.querySelector<HTMLElement>(`#${CSS.escape(clauseMarkId(activeId))}`);
-    if (!el) return;
-    const containerRect = container.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    const offset =
-      elRect.top - containerRect.top - container.clientHeight / 2 + el.clientHeight / 2;
-    container.scrollBy({ top: offset, behavior: "smooth" });
+    const targetId = clauseMarkId(activeId);
+    const raf = requestAnimationFrame(() => {
+      const el = container.querySelector<HTMLElement>(`#${CSS.escape(targetId)}`);
+      if (!el) return;
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const offset =
+        elRect.top - containerRect.top - container.clientHeight / 2 + el.clientHeight / 2;
+      container.scrollBy({ top: offset, behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [activeId, selectionNonce]);
 
   return (
@@ -96,14 +102,18 @@ function Highlight({ clause, active }: HighlightProps): ReactNode {
     <mark
       id={clauseMarkId(clause.id)}
       data-severity={severity}
-      style={{ transition: "box-shadow var(--duration-normal) var(--ease-out-expo)" }}
+      data-active={active || undefined}
+      style={{
+        transition: "box-shadow var(--duration-normal) var(--ease-out-expo)",
+        ...(active ? { animation: "anchor-pulse 900ms var(--ease-out-expo)" } : {}),
+      }}
       className={cn(
-        "rounded-sm px-1 py-0.5 ring-offset-1",
+        "rounded-sm px-1 py-0.5 ring-offset-2",
         severity === "critical" && "bg-critical-soft text-critical",
         severity === "medium" && "bg-medium-soft text-medium",
         severity === "low" && "bg-low-soft text-low",
         severity === "ok" && "bg-ok-soft text-ok",
-        active && "ring-foreground ring-2",
+        active && "ring-foreground scroll-mt-12 ring-2 ring-offset-2",
       )}
     >
       <SeverityIcon severity={severity} className="mr-1 inline size-3 align-text-bottom" />

@@ -171,6 +171,18 @@
   }
 }
 
+@keyframes anchor-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-foreground);
+  }
+  60% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   @keyframes fade-in {
     from {
@@ -178,6 +190,12 @@
     }
     to {
       opacity: 1;
+    }
+  }
+  @keyframes anchor-pulse {
+    from,
+    to {
+      box-shadow: none;
     }
   }
 }

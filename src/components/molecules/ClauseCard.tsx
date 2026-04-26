@@ -1,12 +1,13 @@
 "use client";
 
+import { useState, type KeyboardEvent } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ClauseEvent } from "@/lib/catalog/types";
-import { severityOf } from "@/lib/severity";
+import { SEVERITY_LABEL, severityOf, type Severity } from "@/lib/severity";
 import { cn } from "@/lib/utils";
 
 interface ClauseCardProps {
@@ -16,21 +17,66 @@ interface ClauseCardProps {
   readonly onShowWhy?: (clause: ClauseEvent) => void;
 }
 
-// Single clause card in the simplified pane. Collapsed by default; the whole
-// card is the click / keyboard target — clicking anywhere expands the body
-// and notifies the parent so the contract pane scrolls the matching
-// highlight into view. The rotating chevron is the active indicator and
-// all cards share the same border colour.
+// Per-severity visual treatment. The bar runs the full height of the
+// card so the severity is readable from across the screen; the soft tint
+// runs across the header so users can scan severity without reading the
+// label. Border color also shifts so the whole card carries the signal.
+const SEVERITY_BAR: Record<Severity, string> = {
+  critical: "bg-[var(--color-critical)]",
+  medium: "bg-[var(--color-medium)]",
+  low: "bg-[var(--color-low)]",
+  ok: "bg-[var(--color-ok)]",
+};
+
+const SEVERITY_HEADER_TINT: Record<Severity, string> = {
+  critical: "bg-[var(--color-critical-soft)]/60",
+  medium: "bg-[var(--color-medium-soft)]/60",
+  low: "bg-[var(--color-low-soft)]/60",
+  ok: "bg-[var(--color-ok-soft)]/60",
+};
+
+const SEVERITY_BORDER: Record<Severity, string> = {
+  critical: "border-[var(--color-critical)]/35",
+  medium: "border-[var(--color-medium)]/40",
+  low: "border-[var(--color-low)]/45",
+  ok: "border-[var(--color-ok)]/40",
+};
+
+const SEVERITY_FEATURED_BORDER: Record<Severity, string> = {
+  critical: "border-[var(--color-critical)]",
+  medium: "border-[var(--color-medium)]",
+  low: "border-[var(--color-low)]",
+  ok: "border-[var(--color-ok)]",
+};
+
+const SEVERITY_BADGE: Record<Severity, string> = {
+  critical: "bg-[var(--color-critical)] text-white",
+  medium: "bg-[var(--color-medium)] text-white",
+  low: "bg-[var(--color-low)] text-[var(--color-foreground)]",
+  ok: "bg-[var(--color-ok)] text-white",
+};
+
+// Each card owns its own expand/collapse state so toggling one never
+// affects siblings. The whole card is the click / keyboard target so
+// users don't have to aim at a small chevron; the chevron + soft tint
+// are the visual affordances.
 export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: ClauseCardProps) {
   const severity = severityOf(clause);
-  const expanded = featured;
-  const handleSelect = () => onSelect?.(clause.id);
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const [expanded, setExpanded] = useState(false);
+  const bodyId = `clause-card-body-${clause.id}`;
+
+  const handleToggle = () => {
+    setExpanded((v) => !v);
+    onSelect?.(clause.id);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      handleSelect();
+      handleToggle();
     }
   };
+
   return (
     <Card
       data-testid={`clause-card-${clause.id}`}
@@ -38,32 +84,53 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
       role="button"
       tabIndex={0}
       aria-expanded={expanded}
-      aria-controls={`clause-body-${clause.id}`}
-      onClick={handleSelect}
+      aria-controls={bodyId}
+      onClick={handleToggle}
       onKeyDown={handleKeyDown}
-      style={{ transition: "background-color var(--duration-fast) var(--ease-out-expo)" }}
-      className="border-border hover:bg-secondary/40 focus-visible:ring-ring/60 cursor-pointer overflow-hidden outline-none focus-visible:ring-2"
+      style={{
+        transition:
+          "border-color var(--duration-fast) var(--ease-out-expo), box-shadow var(--duration-fast) var(--ease-out-expo)",
+      }}
+      className={cn(
+        "focus-visible:ring-ring/60 relative cursor-pointer overflow-hidden border-2 pl-1.5 outline-none focus-visible:ring-2",
+        featured ? SEVERITY_FEATURED_BORDER[severity] : SEVERITY_BORDER[severity],
+        featured && "shadow-md",
+      )}
     >
-      <div className="flex items-start gap-3 px-4 py-4">
-        <SeverityIcon severity={severity} className="mt-1 size-5 shrink-0" />
+      <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1.5", SEVERITY_BAR[severity])} />
+      <div
+        style={{ transition: "background-color var(--duration-fast) var(--ease-out-expo)" }}
+        className={cn("flex w-full items-start gap-3 px-4 py-4", SEVERITY_HEADER_TINT[severity])}
+      >
+        <SeverityIcon severity={severity} className="mt-0.5 size-6 shrink-0" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-foreground text-base leading-snug font-semibold tracking-tight">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase",
+                SEVERITY_BADGE[severity],
+              )}
+            >
+              {SEVERITY_LABEL[severity]}
+            </span>
+            <span className="text-muted-foreground/80 font-mono text-[10px] tracking-wide uppercase">
+              {clause.id}
+            </span>
+          </div>
+          <h3 className="text-foreground mt-1.5 text-lg leading-snug font-semibold tracking-tight">
             {clause.title}
           </h3>
-          <div className="text-muted-foreground/70 mt-0.5 font-mono text-xs leading-tight tracking-wide uppercase">
-            {clause.id}
-          </div>
         </div>
         <ChevronDown
           aria-hidden
+          className={cn("text-foreground/70 mt-1.5 size-5 shrink-0", expanded && "rotate-180")}
           style={{ transition: "transform var(--duration-fast) var(--ease-out-expo)" }}
-          className={cn("text-muted-foreground mt-1 size-5 shrink-0", expanded && "rotate-180")}
         />
       </div>
       {expanded && (
-        <CardContent id={`clause-body-${clause.id}`} className="flex flex-col gap-5 px-4 pt-0 pb-4">
+        <CardContent id={bodyId} className="flex flex-col gap-5 px-4 pt-4 pb-4">
           {clause.originalText && (
-            <figure className="bg-muted/40 border-border rounded-md border px-3 py-2.5">
+            <figure className="bg-muted/40 border-border rounded-md border border-l-2 px-3 py-2.5">
               <figcaption className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-widest uppercase">
                 Original clause
               </figcaption>
