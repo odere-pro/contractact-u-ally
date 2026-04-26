@@ -6,6 +6,7 @@ import { ArrowLeftToLine, ChevronDown, Mic, Square } from "lucide-react";
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { ClauseEvent } from "@/lib/catalog/types";
 import type { UseVoiceReturn } from "@/hooks/useVoice";
 import { SEVERITY_LABEL, severityClassnames, severityOf } from "@/lib/severity";
@@ -260,34 +261,37 @@ function VoiceSession({ voice }: { voice: UseVoiceReturn }) {
 
   if (voiceState === "response" && answer) {
     return (
-      <section
-        role="region"
-        aria-label="Voice answer"
-        className="border-border bg-card/60 rounded-md border p-3 text-sm leading-relaxed"
-        onClick={(event) => event.stopPropagation()}
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) dismiss();
+        }}
       >
-        {transcript && (
-          <p className="text-muted-foreground mb-2 text-xs italic">&ldquo;{transcript}&rdquo;</p>
-        )}
-        <p className="text-foreground">{answer}</p>
-        <div className="mt-2 flex items-center justify-between">
-          {modelState === "building" ? (
-            <span className="text-muted-foreground text-xs">Voice model still warming up…</span>
-          ) : (
-            <span />
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(event) => {
-              event.stopPropagation();
-              dismiss();
-            }}
-          >
-            Dismiss
-          </Button>
-        </div>
-      </section>
+        <DialogContent
+          title={transcript.trim() ? `“${transcript.trim()}”` : "Voice answer"}
+          description="Voice answer"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">{answer}</p>
+          <div className="mt-2 flex items-center justify-between">
+            {modelState === "building" ? (
+              <span className="text-muted-foreground text-xs">Voice model still warming up…</span>
+            ) : (
+              <span />
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(event) => {
+                event.stopPropagation();
+                dismiss();
+              }}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
