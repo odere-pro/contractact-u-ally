@@ -1,0 +1,38 @@
+@startuml c4-component-pipeline
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.10.0/C4_Component.puml
+
+title contractact-u-ally — Components inside the Risk Pipeline (C4 L3)
+
+Container(analyzeApi, "/api/analyze", "Next.js Route Handler", "Entry point, returns NDJSON Response")
+
+System_Boundary(pipe, "runRiskPipeline (src/lib/pipeline)") {
+  Component(orch, "runRiskPipeline", "TS function", "Orchestrates stages, owns the ReadableStream")
+  Component(streamFactory, "defaultClaudeStream", "TS async generator", "Wraps Anthropic messages.stream → text deltas")
+  Component(events, "streamEvents", "TS module", "encodeStage / encodeClause / encodeSummary / encodeError → NDJSON bytes")
+  Component(prompts, "prompts", "TS module", "buildAnalysisSystemPrompt + loadRiskExamples")
+}
+
+System_Boundary(cat, "Rule Catalog (src/lib/catalog)") {
+  Component(classifier, "classifier", "TS module", "classifyContract(text) → { typeId, confidence }")
+  Component(ruleLoader, "ruleLoader", "TS module", "loadRulesForType(typeId, jurisdiction) → LoadedRuleSet")
+  Component(schemas, "schemas (zod)", "TS module", "clauseEventSchema, summaryEventSchema, analyzeRequestSchema")
+}
+
+ComponentDb(rules, "Rule data", "JSON files under data/", "labor-contracts/*, nl-labor-law.json, risk-examples")
+
+System_Ext(anthropic, "Anthropic API", "claude-sonnet-4-6 streaming")
+
+Rel(analyzeApi, orch, "runRiskPipeline(opts)")
+Rel(orch, classifier, "classifyContract(ocrText)")
+Rel(orch, ruleLoader, "loadRulesForType(typeId, jurisdiction)")
+Rel(ruleLoader, rules, "read JSON")
+Rel(orch, prompts, "buildAnalysisSystemPrompt(ruleSet)")
+Rel(prompts, rules, "loadRiskExamples")
+Rel(orch, streamFactory, "yield text deltas")
+Rel(streamFactory, anthropic, "messages.stream", "HTTPS / SSE")
+Rel(orch, schemas, "validate each NDJSON line")
+Rel(orch, events, "encode stage/clause/summary")
+Rel(events, analyzeApi, "Uint8Array → ReadableStream")
+
+SHOW_LEGEND()
+@enduml
