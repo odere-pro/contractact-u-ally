@@ -20,8 +20,13 @@ const ANALYZE_MODEL = "claude-sonnet-4-6";
 const ANALYZE_MAX_TOKENS = 8192;
 
 export type OcrResult =
-  | { ok: true; text: string; pages: number; durationMs: number }
-  | { ok: false; reason: string };
+  | {
+      readonly ok: true;
+      readonly text: string;
+      readonly pages: number;
+      readonly durationMs: number;
+    }
+  | { readonly ok: false; readonly reason: string };
 
 export type OcrFactory = (pdfBytes: Uint8Array) => Promise<OcrResult>;
 
@@ -201,14 +206,27 @@ function defaultMistralOcr(apiKey: string): OcrFactory {
   };
 }
 
+// Domain error messages are programmer-controlled and therefore safe
+// to surface, but we still cap their length and run the same
+// path-fragment filter as `sanitizeErrorMessage` so a future change
+// that introduces user-controlled content into `reason` cannot silently
+// bypass sanitization.
+function safeDomainMessage(message: string, fallback: string): string {
+  if (message.length > 120) return fallback;
+  if (message.includes("ENOENT") || message.includes("/")) return fallback;
+  return message;
+}
+
 /**
  * Produce a client-safe error message. Filesystem paths from `ENOENT`,
  * SDK internals, and stack fragments must not reach the browser; map
  * known categories to fixed strings, log the raw error server-side.
  */
 function sanitizeErrorMessage(err: unknown): string {
-  if (err instanceof OcrPipelineError) return err.message;
-  if (err instanceof ContractTextRangeError) return err.message;
+  if (err instanceof OcrPipelineError) return safeDomainMessage(err.message, "OCR pipeline error");
+  if (err instanceof ContractTextRangeError) {
+    return safeDomainMessage(err.message, "Contract text out of accepted range");
+  }
   if (err instanceof Error) {
     const raw = err.message;
     console.error("runRiskPipeline failure:", err);

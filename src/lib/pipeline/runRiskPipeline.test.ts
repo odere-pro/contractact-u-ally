@@ -243,4 +243,49 @@ describe("runRiskPipeline", () => {
     expect(errs).toHaveLength(1);
     expect(errs[0].message).toMatch(/too short/);
   });
+
+  it("rejects OCR text larger than 500 KB with an error event", async () => {
+    // 600 KB single-byte chars — comfortably over the 500 KB cap.
+    const stream = runRiskPipeline({
+      pdfBytes: PDF_BYTES,
+      mistralApiKey: "test",
+      ocrFactory: fakeOcr("x".repeat(600 * 1024)),
+      typeId: "nl-test",
+      jurisdiction: "nl",
+      textStreamFactory: async function* () {
+        // Should not run — over-cap OCR text fails before the analyze stage.
+      },
+    });
+    const events = (await readNdjson(stream)) as { type: string; message?: string }[];
+    const errs = events.filter((e) => e.type === "error");
+    expect(errs).toHaveLength(1);
+    expect(errs[0].message).toMatch(/500KB/);
+    expect(events.find((e) => e.type === "clause")).toBeUndefined();
+  });
+
+  it("stops cleanly when the consumer cancels mid-stream", async () => {
+    // Cancel the stream right after the first stage event arrives. The
+    // pipeline's safeEnqueue path must swallow the resulting controller
+    // throw and not crash the start() promise.
+    const stream = runRiskPipeline({
+      pdfBytes: PDF_BYTES,
+      mistralApiKey: "test",
+      ocrFactory: fakeOcr("x".repeat(300)),
+      typeId: "nl-test",
+      jurisdiction: "nl",
+      textStreamFactory: async function* () {
+        // Yield many lines so that, post-cancel, the loop has more to
+        // attempt (and would throw on enqueue if alive=false didn't kick in).
+        for (let i = 0; i < 50; i++) yield validClause + "\n";
+      },
+    });
+
+    const reader = stream.getReader();
+    const first = await reader.read();
+    expect(first.done).toBe(false);
+    await reader.cancel();
+    // After cancel, subsequent reads complete cleanly.
+    const after = await reader.read();
+    expect(after.done).toBe(true);
+  });
 });

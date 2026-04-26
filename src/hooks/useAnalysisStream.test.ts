@@ -211,4 +211,83 @@ describe("useAnalysisStream", () => {
     expect(result.current.state.phase).toBe("error");
     expect(result.current.state.error).toBe("network down");
   });
+
+  it("surfaces body.error when the server returns a 4xx JSON error", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "File too large" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(() => useAnalysisStream());
+    await act(async () => {
+      await result.current.run({ file: makeFile("big") });
+    });
+
+    expect(result.current.state.phase).toBe("error");
+    expect(result.current.state.error).toBe("File too large");
+  });
+
+  it("falls back to a status-code message when 4xx has no JSON body", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response("not json at all", { status: 503 }),
+    );
+
+    const { result } = renderHook(() => useAnalysisStream());
+    await act(async () => {
+      await result.current.run({ file: makeFile("svc") });
+    });
+
+    expect(result.current.state.phase).toBe("error");
+    expect(result.current.state.error).toBe("Analyze request failed (503)");
+  });
+
+  it("a stale 4xx from an aborted run cannot clobber a live second run", async () => {
+    // First run: a fetch that resolves to 4xx after we abort it.
+    let resolveFirst: (response: Response) => void = () => {};
+    vi.mocked(globalThis.fetch).mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFirst = resolve;
+        }),
+    );
+    // Second run: a clean stream that should drive phase to "done".
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      ndjsonStream([
+        JSON.stringify({
+          type: "summary",
+          jurisdiction: "nl",
+          contractType: "nl-indefinite",
+          detectedLanguage: "en",
+          totalClauses: 0,
+          illegalCount: 0,
+          exploitativeCount: 0,
+          permitConflictCount: 0,
+          uncheckedCount: 0,
+          compliantCount: 0,
+        }),
+      ]),
+    );
+
+    const { result } = renderHook(() => useAnalysisStream());
+
+    // Kick off the first run (will be superseded).
+    act(() => {
+      void result.current.run({ file: makeFile("first") });
+    });
+    await waitFor(() => expect(result.current.state.phase).toBe("running"));
+
+    // Start the second run — this aborts the first controller.
+    await act(async () => {
+      const second = result.current.run({ file: makeFile("second") });
+      // Now resolve the first fetch with a 4xx; the stale signal must
+      // not be allowed to flip phase to "error".
+      resolveFirst(new Response(JSON.stringify({ error: "stale" }), { status: 400 }));
+      await second;
+    });
+
+    expect(result.current.state.phase).toBe("done");
+    expect(result.current.state.error).toBeNull();
+  });
 });

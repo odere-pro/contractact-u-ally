@@ -168,4 +168,72 @@ describe("POST /api/analyze", () => {
     const res = await POST(multipartRequest(pdfFile(), { jurisdiction: "se" }));
     expect(res.status).toBe(400);
   });
+
+  it("rejects an oversized PDF with 413", async () => {
+    vi.doMock("@/lib/pipeline/runRiskPipeline", () => ({
+      runRiskPipeline: () => new ReadableStream(),
+    }));
+    const { POST } = await import("./route");
+    // 11 MB starting with the %PDF magic — over the 10 MB cap. We have
+    // to allocate the real bytes because FormData round-trip computes
+    // candidate.size from the buffer length, ignoring any size getter
+    // overrides on the source File.
+    const big = new Uint8Array(11 * 1024 * 1024);
+    big.set(PDF_HEAD, 0);
+    const bigPdf = new File([big], "big.pdf", { type: "application/pdf" });
+    const res = await POST(multipartRequest(bigPdf));
+    expect(res.status).toBe(413);
+  });
+
+  it("rejects a file claiming application/pdf with non-PDF magic bytes (400)", async () => {
+    vi.doMock("@/lib/pipeline/runRiskPipeline", () => ({
+      runRiskPipeline: () => new ReadableStream(),
+    }));
+    const { POST } = await import("./route");
+    // JPEG header bytes wrapped in a File that declares application/pdf.
+    const jpegHead = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00]);
+    const fakePdf = new File([jpegHead], "fake.pdf", { type: "application/pdf" });
+    const res = await POST(multipartRequest(fakePdf));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("isAllowedOrigin", () => {
+  // Origin and Sec-Fetch-Site are forbidden request headers in the
+  // Fetch spec, so they cannot be set via the Request constructor in
+  // Node — we exercise the pure helper directly with a Headers object.
+  it("allows requests with no Origin / no Sec-Fetch-Site (server-to-server)", async () => {
+    const { isAllowedOrigin } = await import("./route");
+    expect(isAllowedOrigin(new Headers(), "https://example.com/api/analyze")).toBe(true);
+  });
+
+  it("allows Sec-Fetch-Site=same-origin", async () => {
+    const { isAllowedOrigin } = await import("./route");
+    const h = new Headers({ "sec-fetch-site": "same-origin" });
+    expect(isAllowedOrigin(h, "https://example.com/api/analyze")).toBe(true);
+  });
+
+  it("rejects Sec-Fetch-Site=cross-site", async () => {
+    const { isAllowedOrigin } = await import("./route");
+    const h = new Headers({ "sec-fetch-site": "cross-site" });
+    expect(isAllowedOrigin(h, "https://example.com/api/analyze")).toBe(false);
+  });
+
+  it("allows matching Origin host", async () => {
+    const { isAllowedOrigin } = await import("./route");
+    const h = new Headers({ origin: "https://example.com" });
+    expect(isAllowedOrigin(h, "https://example.com/api/analyze")).toBe(true);
+  });
+
+  it("rejects mismatched Origin host", async () => {
+    const { isAllowedOrigin } = await import("./route");
+    const h = new Headers({ origin: "https://attacker.example.com" });
+    expect(isAllowedOrigin(h, "https://example.com/api/analyze")).toBe(false);
+  });
+
+  it("rejects malformed Origin header", async () => {
+    const { isAllowedOrigin } = await import("./route");
+    const h = new Headers({ origin: "not a url" });
+    expect(isAllowedOrigin(h, "https://example.com/api/analyze")).toBe(false);
+  });
 });

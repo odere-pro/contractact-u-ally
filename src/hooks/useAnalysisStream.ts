@@ -118,8 +118,14 @@ export function useAnalysisStream() {
         return;
       }
 
+      // The fetch can resolve with a non-OK status after a newer run() has
+      // already moved phase back to "running". Without this check the
+      // stale error would clobber the live state.
+      if (controller.signal.aborted) return;
+
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
+        if (controller.signal.aborted) return;
         safeSetState((s) => ({
           ...s,
           phase: "error",
