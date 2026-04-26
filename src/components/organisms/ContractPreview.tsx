@@ -13,6 +13,7 @@ interface ContractPreviewProps {
   readonly ocrText: string;
   readonly clauses: readonly ClauseEvent[];
   readonly activeId: string | null;
+  readonly selectionNonce?: number;
 }
 
 // Center pane. We don't render the original PDF — pdf.js is a follow-
@@ -20,21 +21,31 @@ interface ContractPreviewProps {
 // clause highlighted inline. `whitespace-pre-wrap` is critical here:
 // without it, the renderer collapsed runs of whitespace and the parent
 // grid forced text to wrap per word.
-export function ContractPreview({ ocrText, clauses, activeId }: ContractPreviewProps) {
+export function ContractPreview({
+  ocrText,
+  clauses,
+  activeId,
+  selectionNonce = 0,
+}: ContractPreviewProps) {
   const segments = useMemo(() => splitWithHighlights(ocrText, clauses), [ocrText, clauses]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // When the active clause changes, ensure it's visible. The
-  // ResultsLayout controller also calls scrollIntoView on the global
-  // document, but if the container has overflow we want a smooth
-  // local scroll too.
+  // Re-runs on every selection (activeId OR selectionNonce change), so
+  // re-clicking the already-active clause still scrolls. We compute the
+  // scroll offset against the local container rather than relying on
+  // Element.scrollIntoView, which interacts unpredictably with the
+  // nested overflow containers in the 3-pane layout.
   useEffect(() => {
-    if (!activeId || !scrollRef.current) return;
-    const el = scrollRef.current.querySelector<HTMLElement>(
-      `#${CSS.escape(clauseMarkId(activeId))}`,
-    );
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [activeId]);
+    const container = scrollRef.current;
+    if (!activeId || !container) return;
+    const el = container.querySelector<HTMLElement>(`#${CSS.escape(clauseMarkId(activeId))}`);
+    if (!el) return;
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const offset =
+      elRect.top - containerRect.top - container.clientHeight / 2 + el.clientHeight / 2;
+    container.scrollBy({ top: offset, behavior: "smooth" });
+  }, [activeId, selectionNonce]);
 
   return (
     <section
