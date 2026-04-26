@@ -35,19 +35,22 @@ export function RiskRail({
   return (
     <aside data-testid="risk-rail" aria-label="Findings index" className="flex flex-col gap-5 p-4">
       {onToggleSeverity && (
-        <section className="flex flex-col gap-1">
-          <h3 className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
-            Filter
+        <section className="flex flex-col gap-1.5" aria-labelledby="risk-rail-filter-heading">
+          <h3
+            id="risk-rail-filter-heading"
+            className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-widest uppercase"
+          >
+            Filter by severity
           </h3>
           {VISIBLE_SEVERITIES.map((sev) => (
             <label
               key={sev}
               htmlFor={`severity-filter-${sev}`}
               className={cn(
-                "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors select-none",
+                "flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-[0.9375rem] transition-colors select-none",
                 filter[sev]
                   ? "text-foreground hover:bg-secondary/60"
-                  : "text-muted-foreground/50 hover:bg-secondary/40 hover:text-muted-foreground",
+                  : "text-muted-foreground/60 hover:bg-secondary/40 hover:text-muted-foreground",
               )}
             >
               <input
@@ -57,13 +60,13 @@ export function RiskRail({
                 onChange={() => onToggleSeverity(sev)}
                 className="sr-only"
               />
-              <SeverityIcon severity={sev} className="size-3.5 shrink-0" />
+              <SeverityIcon severity={sev} className="size-4 shrink-0" />
               <span className="font-medium">{SEVERITY_LABEL[sev]}</span>
               <span
                 aria-hidden
                 className={cn(
-                  "ml-auto text-xs transition-opacity",
-                  filter[sev] ? "opacity-40" : "opacity-0",
+                  "ml-auto text-sm transition-opacity",
+                  filter[sev] ? "opacity-50" : "opacity-0",
                 )}
               >
                 ✓
@@ -73,12 +76,17 @@ export function RiskRail({
         </section>
       )}
       {onToggleSeverity && <Separator />}
-      <section className="flex flex-col gap-1.5">
-        <h3 className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
-          Jump to
+      <section className="flex flex-col gap-2" aria-labelledby="risk-rail-jump-heading">
+        <h3
+          id="risk-rail-jump-heading"
+          className="text-muted-foreground mb-1 text-xs font-semibold tracking-widest uppercase"
+        >
+          Jump to clause
         </h3>
         {visibleSorted.length === 0 ? (
-          <p className="text-muted-foreground text-xs">No clauses match the current filter.</p>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            No clauses match the current filter.
+          </p>
         ) : (
           <nav className="flex flex-col gap-0.5" aria-label="Clause navigation">
             {visibleSorted.map((c) => (

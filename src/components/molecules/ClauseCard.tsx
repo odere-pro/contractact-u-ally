@@ -33,45 +33,55 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
         type="button"
         onClick={() => onSelect?.(clause.id)}
         aria-pressed={featured}
-        className="flex w-full items-start gap-3 px-4 pt-4 text-left"
+        style={{ transition: "background-color var(--duration-fast) var(--ease-out-expo)" }}
+        className="hover:bg-secondary/40 focus-visible:bg-secondary/40 flex w-full cursor-pointer items-start gap-3 px-4 pt-4 text-left outline-none"
       >
-        <SeverityIcon severity={severity} className="mt-0.5 size-4 shrink-0" />
+        <SeverityIcon severity={severity} className="mt-1 size-5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm leading-snug font-semibold">{clause.title}</div>
-          <div className="font-mono text-[10px] leading-tight opacity-50">{clause.id}</div>
+          <h3 className="text-foreground text-base leading-snug font-semibold tracking-tight">
+            {clause.title}
+          </h3>
+          <div className="text-muted-foreground/70 mt-0.5 font-mono text-xs leading-tight tracking-wide uppercase">
+            {clause.id}
+          </div>
         </div>
       </button>
-      <CardContent className="flex flex-col gap-3 px-4 pt-3 pb-4">
+      <CardContent className="flex flex-col gap-5 px-4 pt-3 pb-4">
         {clause.originalText && (
-          <figure className="bg-muted/40 border-border rounded-md border border-l-2 px-3 py-2">
-            <figcaption className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-widest uppercase">
-              Clause
+          <figure className="bg-muted/40 border-border rounded-md border border-l-2 px-3 py-2.5">
+            <figcaption className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-widest uppercase">
+              Original clause
             </figcaption>
-            <blockquote className="text-foreground/80 text-sm leading-relaxed">
+            <blockquote className="text-foreground/80 text-[0.9375rem] leading-relaxed">
               {clause.originalText}
             </blockquote>
           </figure>
         )}
-        <p className="text-sm leading-relaxed">{clause.explanation}</p>
+        <section className="flex flex-col gap-2">
+          <h4 className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+            Plain-language explanation
+          </h4>
+          <p className="text-foreground text-[0.9375rem] leading-relaxed">{clause.explanation}</p>
+        </section>
         {clause.action && (
-          <div className="border-foreground/15 bg-foreground/[0.03] rounded-md border-l-2 px-3 py-2">
-            <div className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-widest uppercase">
+          <section className="border-foreground/15 bg-foreground/[0.03] flex flex-col gap-2 rounded-md border-l-2 px-3 py-2.5">
+            <h4 className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
               What to do
-            </div>
-            <p className="text-sm leading-relaxed">{clause.action}</p>
-          </div>
+            </h4>
+            <p className="text-foreground text-[0.9375rem] leading-relaxed">{clause.action}</p>
+          </section>
         )}
         {(clause.citation || onShowWhy) && (
           <div className="flex flex-wrap items-center gap-2">
             {onShowWhy && (
-              <Button size="sm" variant="outline" onClick={() => onShowWhy(clause)}>
+              <Button size="default" variant="outline" onClick={() => onShowWhy(clause)}>
                 Why is this a risk?
               </Button>
             )}
             {clause.citation && (
               <span
                 aria-label={`Reference: ${clause.citation.article}`}
-                className="border-border text-muted-foreground inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px]"
+                className="border-border text-muted-foreground inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-xs"
               >
                 {clause.citation.article}
               </span>

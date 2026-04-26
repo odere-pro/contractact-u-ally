@@ -36,16 +36,18 @@ export function RiskJumpRow({ clauseId, title, severity, active, onSelect }: Ris
         onSelect(clauseId);
       }}
       className={cn(
-        "flex items-center gap-2.5 rounded-r-md border-l-2 px-2.5 py-2 transition-colors",
+        "flex items-center gap-3 rounded-r-md border-l-2 px-3 py-2.5 transition-colors",
         active
           ? cn("bg-secondary text-foreground", SEVERITY_BORDER[severity])
           : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground border-l-transparent",
       )}
     >
-      <SeverityIcon severity={severity} className="size-4 shrink-0" />
+      <SeverityIcon severity={severity} className="size-5 shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm leading-tight font-medium">{title}</div>
-        <div className="truncate font-mono text-[10px] leading-tight opacity-50">{clauseId}</div>
+        <div className="truncate text-[0.9375rem] leading-snug font-medium">{title}</div>
+        <div className="text-muted-foreground/70 mt-0.5 truncate font-mono text-[11px] leading-tight tracking-wide uppercase">
+          {clauseId}
+        </div>
       </div>
     </a>
   );
