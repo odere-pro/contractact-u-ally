@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getAnthropic } from "@/lib/anthropicClient";
+import { isAnthropicCreditError } from "@/lib/anthropicFallback";
 import { listContractTypes } from "./ruleLoader";
 import { classifyResponseSchema } from "./schemas";
 import type { ClassifyResult, ContractTypeEntry, Jurisdiction } from "./types";
@@ -47,12 +48,21 @@ export async function classifyContract(
   const types = await listContractTypes();
   if (types.length === 0) return FALLBACK(jurisdiction);
 
-  const message = await getAnthropic().messages.create({
-    model: CLASSIFY_MODEL,
-    max_tokens: 128,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildUserMessage(text, types, jurisdiction) }],
-  });
+  let message;
+  try {
+    message = await getAnthropic().messages.create({
+      model: CLASSIFY_MODEL,
+      max_tokens: 128,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: buildUserMessage(text, types, jurisdiction) }],
+    });
+  } catch (err) {
+    if (isAnthropicCreditError(err)) {
+      console.warn("classifyContract: Anthropic credit error — using fallback classification");
+      return FALLBACK(jurisdiction);
+    }
+    throw err;
+  }
 
   const raw = message.content
     .filter((b) => b.type === "text")

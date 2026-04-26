@@ -22,16 +22,16 @@ export default function PrivacyPage() {
           <dt className="text-foreground text-base font-semibold">1. What we process</dt>
           <dd className="text-muted-foreground leading-relaxed">
             When you upload a contract, the file is parsed in memory on a serverless function and
-            its text is sent to a third-party large-language-model provider for clause analysis.
-            The PDF itself is never written to disk on our infrastructure.
+            its text is sent to a third-party large-language-model provider for clause analysis. The
+            PDF itself is never written to disk on our infrastructure.
           </dd>
         </div>
         <div className="flex flex-col gap-2">
           <dt className="text-foreground text-base font-semibold">2. What we store</dt>
           <dd className="text-muted-foreground leading-relaxed">
             We do not maintain a database of uploaded contracts or analysis results. A short summary
-            of your last analysis is held in your browser's <code>localStorage</code> only, under a
-            key you can clear at any time. The full contract text is never persisted by us.
+            of your last analysis is held in your browser&apos;s <code>localStorage</code> only,
+            under a key you can clear at any time. The full contract text is never persisted by us.
           </dd>
         </div>
         <div className="flex flex-col gap-2">
