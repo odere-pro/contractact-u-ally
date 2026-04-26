@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-import { SectionRef } from "@/components/atoms/SectionRef";
-import { SeverityBadge } from "@/components/molecules/SeverityBadge";
+import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ClauseEvent } from "@/lib/catalog/types";
@@ -28,8 +27,11 @@ function truncate(text: string): string {
 // Single clause card in the simplified pane. All cards start collapsed —
 // the user opens the explanations they want to read. Featured cards keep
 // a heavier border so the active selection stays obvious. Clicking the
-// header also notifies the parent so the contract pane can scroll the
-// matching highlight into view.
+// header notifies the parent so the contract pane can scroll the matching
+// highlight into view.
+//
+// Layout: icon (fixed-width, top-aligned) | [title / slug / preview]
+// so all titles start at the same horizontal offset regardless of slug length.
 export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: ClauseCardProps) {
   const [open, setOpen] = useState(false);
 
@@ -47,27 +49,28 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
         onClick={() => {
           // Fire onSelect only on the closed→open transition so a user
           // collapsing an already-active card does not retrigger
-          // scroll-into-view in the contract pane. Keep the setOpen
-          // updater pure — side effects belong outside it because
-          // React may invoke updaters more than once.
+          // scroll-into-view in the contract pane.
           if (!open) onSelect?.(clause.id);
           setOpen((v) => !v);
         }}
-        className="flex w-full items-center gap-3 p-4 text-left"
+        className="flex w-full items-start gap-3 p-4 text-left"
       >
-        <SeverityBadge severity={severity} compact={!featured} />
-        <div className="flex grow flex-col gap-0.5">
-          <div className="flex items-center gap-2">
-            <SectionRef id={clause.id} />
-            <span className="font-medium">{clause.title}</span>
-          </div>
+        <SeverityIcon severity={severity} className="mt-0.5 size-4 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="text-sm leading-snug font-semibold">{clause.title}</div>
+          <div className="font-mono text-[10px] leading-tight opacity-50">{clause.id}</div>
           {!open && (
-            <span className="text-muted-foreground line-clamp-1 text-xs">{clause.explanation}</span>
+            <div className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
+              {clause.explanation}
+            </div>
           )}
         </div>
         <ChevronDown
           aria-hidden
-          className={cn("text-muted-foreground size-4 transition-transform", open && "rotate-180")}
+          className={cn(
+            "text-muted-foreground mt-0.5 size-4 shrink-0 transition-transform",
+            open && "rotate-180",
+          )}
         />
       </button>
       {open && (
@@ -77,9 +80,9 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
               {truncate(clause.originalText)}
             </blockquote>
           )}
-          <p className="text-sm">{clause.explanation}</p>
+          <p className="text-sm leading-relaxed">{clause.explanation}</p>
           {clause.action && (
-            <p className="text-sm">
+            <p className="text-sm leading-relaxed">
               <strong>What to do:</strong> {clause.action}
             </p>
           )}
