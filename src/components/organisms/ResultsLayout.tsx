@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { ContractPreview } from "@/components/organisms/ContractPreview";
 import { ResultsFooter } from "@/components/organisms/ResultsFooter";
@@ -9,7 +9,8 @@ import { ShareDialog } from "@/components/organisms/ShareDialog";
 import { SimplifiedPane } from "@/components/organisms/SimplifiedPane";
 import { WhyDrawer } from "@/components/organisms/WhyDrawer";
 import { HitlBanner } from "@/components/molecules/HitlBanner";
-import { ALL_SEVERITIES_SHOWN, type SeverityFilter } from "@/lib/clauseFilters";
+import { DEFAULT_FILTER, type SeverityFilter } from "@/lib/clauseFilters";
+import { severityOf } from "@/lib/severity";
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
 
 interface ResultsLayoutProps {
@@ -29,8 +30,13 @@ interface ResultsLayoutProps {
 // word-per-line wrap. Below ~1024px we fall back to a stacked layout
 // so each pane is still individually readable.
 export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps) {
-  const [activeId, setActiveId] = useState<string | null>(clauses[0]?.id ?? null);
-  const [filter, setFilter] = useState<SeverityFilter>(ALL_SEVERITIES_SHOWN);
+  // Compliant clauses are dropped from every display surface — they're
+  // noise in a "what to fix" UI. Counts in `summary` and `illegalCount`
+  // still reflect the full set, so the HITL banner and share report stay
+  // accurate.
+  const displayClauses = useMemo(() => clauses.filter((c) => severityOf(c) !== "ok"), [clauses]);
+  const [activeId, setActiveId] = useState<string | null>(displayClauses[0]?.id ?? null);
+  const [filter, setFilter] = useState<SeverityFilter>(DEFAULT_FILTER);
   const [whyClause, setWhyClause] = useState<ClauseEvent | null>(null);
   const [whyOpen, setWhyOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -60,7 +66,7 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[260px_minmax(520px,1fr)_400px]">
         <div className="border-border min-h-0 overflow-y-auto border-b lg:border-r lg:border-b-0">
           <RiskRail
-            clauses={clauses}
+            clauses={displayClauses}
             activeId={activeId}
             filter={filter}
             onSelectClause={handleSelectClause}
@@ -68,11 +74,11 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
           />
         </div>
         <div className="bg-secondary/30 min-h-0">
-          <ContractPreview ocrText={ocrText} clauses={clauses} activeId={activeId} />
+          <ContractPreview ocrText={ocrText} clauses={displayClauses} activeId={activeId} />
         </div>
         <div className="border-border min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l">
           <SimplifiedPane
-            clauses={clauses}
+            clauses={displayClauses}
             summary={summary}
             filter={filter}
             activeId={activeId}

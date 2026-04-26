@@ -25,23 +25,13 @@ function truncate(text: string): string {
     : text;
 }
 
-// Single clause card in the simplified pane. Featured cards are
-// pre-expanded with prominent visual weight — used for the active
-// finding. Non-featured cards are collapsible. Clicking the header
-// also notifies the parent so the contract pane can scroll the
+// Single clause card in the simplified pane. All cards start collapsed —
+// the user opens the explanations they want to read. Featured cards keep
+// a heavier border so the active selection stays obvious. Clicking the
+// header also notifies the parent so the contract pane can scroll the
 // matching highlight into view.
 export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: ClauseCardProps) {
-  const [open, setOpen] = useState(featured);
-  // React-during-render pattern: when `featured` flips on (e.g. user
-  // clicks a row in the left rail), expand. Tracking `prevFeatured`
-  // means we only set on transition, not on every render. We don't
-  // auto-collapse on `featured = false` so the user can browse
-  // multiple cards without losing context.
-  const [prevFeatured, setPrevFeatured] = useState(featured);
-  if (featured !== prevFeatured) {
-    setPrevFeatured(featured);
-    if (featured) setOpen(true);
-  }
+  const [open, setOpen] = useState(false);
 
   const severity = severityOf(clause);
   return (

@@ -5,11 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 
 import { ClauseCard } from "@/components/molecules/ClauseCard";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  ALL_SEVERITIES_SHOWN,
-  applySeverityFilter,
-  type SeverityFilter,
-} from "@/lib/clauseFilters";
+import { DEFAULT_FILTER, applySeverityFilter, type SeverityFilter } from "@/lib/clauseFilters";
 import { MIGRANT_WORKER_LABEL, MIGRANT_WORKER_TAGLINE } from "@/lib/profileCopy";
 import { sortBySeverity } from "@/lib/severity";
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
@@ -23,14 +19,14 @@ interface SimplifiedPaneProps {
   readonly onShowWhy?: (clause: ClauseEvent) => void;
 }
 
-// Right pane. The active clause is pinned at the top and rendered
-// expanded; the rest follow in severity order as collapsible cards.
-// When the analysis returns nothing concerning we render the "all
-// clear" panel instead.
+// Right pane. The active clause is pinned at the top; cards start
+// collapsed and the user opens what they want to read. When the
+// analysis returns nothing concerning we render the "all clear" panel
+// instead.
 export function SimplifiedPane({
   clauses,
   summary,
-  filter = ALL_SEVERITIES_SHOWN,
+  filter = DEFAULT_FILTER,
   activeId = null,
   onSelectClause,
   onShowWhy,
