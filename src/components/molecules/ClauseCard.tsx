@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent, type MouseEvent } from "react";
+import { type KeyboardEvent, type MouseEvent } from "react";
 import { ArrowLeftToLine, ChevronDown } from "lucide-react";
 
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
@@ -42,20 +42,19 @@ const SEVERITY_BADGE: Record<Severity, string> = {
   ok: "bg-[var(--color-ok)] text-white",
 };
 
-// Each card owns its own expand/collapse state so toggling one never
-// affects siblings. The whole card is the click / keyboard target so
-// users don't have to aim at a small chevron; the chevron + soft tint
-// are the visual affordances. Card click ONLY toggles expansion; a
-// dedicated "Show in contract" button navigates the contract pane so
-// the two intents stay separable.
+// Expansion is driven by `featured` — the parent owns which card is
+// active so selecting one collapses the others. The whole card and the
+// "Show in contract" button both call onSelect, so a click anywhere on
+// the row both expands the card and anchors the contract pane to the
+// matching highlight.
 export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: ClauseCardProps) {
   const severity = severityOf(clause);
-  const [expanded, setExpanded] = useState(false);
+  const expanded = featured;
   const bodyId = `clause-card-body-${clause.id}`;
   const tinted = expanded || featured;
 
   const handleToggle = () => {
-    setExpanded((v) => !v);
+    onSelect?.(clause.id);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

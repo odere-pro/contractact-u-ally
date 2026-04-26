@@ -76,6 +76,7 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
             clauses={displayClauses}
             activeId={activeId}
             selectionNonce={selectionNonce}
+            onSelectClause={handleSelectClause}
           />
         </div>
         <div className="border-border bg-background min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l">

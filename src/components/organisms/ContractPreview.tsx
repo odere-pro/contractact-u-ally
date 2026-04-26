@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from "react";
 
 import { SectionRef } from "@/components/atoms/SectionRef";
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
@@ -14,6 +14,7 @@ interface ContractPreviewProps {
   readonly clauses: readonly ClauseEvent[];
   readonly activeId: string | null;
   readonly selectionNonce?: number;
+  readonly onSelectClause?: (id: string) => void;
 }
 
 // Center pane. We don't render the original PDF — pdf.js is a follow-
@@ -26,6 +27,7 @@ export function ContractPreview({
   clauses,
   activeId,
   selectionNonce = 0,
+  onSelectClause,
 }: ContractPreviewProps) {
   const segments = useMemo(() => splitWithHighlights(ocrText, clauses), [ocrText, clauses]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -77,6 +79,7 @@ export function ContractPreview({
                 key={`h-${segment.clause.id}`}
                 clause={segment.clause}
                 active={activeId === segment.clause.id}
+                onSelect={onSelectClause}
               />
             ),
           )}
@@ -94,15 +97,30 @@ export function ContractPreview({
 interface HighlightProps {
   readonly clause: ClauseEvent;
   readonly active: boolean;
+  readonly onSelect?: (id: string) => void;
 }
 
-function Highlight({ clause, active }: HighlightProps): ReactNode {
+function Highlight({ clause, active, onSelect }: HighlightProps): ReactNode {
   const severity = severityOf(clause);
+  const interactive = Boolean(onSelect);
+  const handleClick = () => onSelect?.(clause.id);
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!onSelect) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelect(clause.id);
+    }
+  };
   return (
     <mark
       id={clauseMarkId(clause.id)}
       data-severity={severity}
       data-active={active || undefined}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-pressed={interactive ? active : undefined}
+      onClick={interactive ? handleClick : undefined}
+      onKeyDown={interactive ? handleKeyDown : undefined}
       style={{
         transition: "box-shadow var(--duration-normal) var(--ease-out-expo)",
         ...(active ? { animation: "anchor-pulse 900ms var(--ease-out-expo)" } : {}),
@@ -113,6 +131,8 @@ function Highlight({ clause, active }: HighlightProps): ReactNode {
         severity === "medium" && "bg-medium-soft text-medium",
         severity === "low" && "bg-low-soft text-low",
         severity === "ok" && "bg-ok-soft text-ok",
+        interactive &&
+          "focus-visible:ring-ring/60 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         active && "scroll-mt-12",
       )}
     >
