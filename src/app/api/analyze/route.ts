@@ -19,24 +19,15 @@ function jsonError(status: number, message: string): Response {
   });
 }
 
-function statusForFailure(reason: UploadValidationFailure): number {
-  if (reason === "too_large") return 413;
-  if (reason === "mime_not_allowed") return 415;
-  return 400;
-}
-
-function messageForFailure(reason: UploadValidationFailure): string {
-  switch (reason) {
-    case "empty":
-      return "Empty file";
-    case "too_large":
-      return "File too large";
-    case "mime_not_allowed":
-      return "Unsupported file type";
-    case "magic_mismatch":
-      return "File contents do not match declared type";
-  }
-}
+// Single source of truth for upload-failure → HTTP response. The exhaustive
+// Record makes adding a new UploadValidationFailure member a TS error if
+// anyone forgets to map it here.
+const FAILURE_RESPONSE: Record<UploadValidationFailure, { status: number; message: string }> = {
+  empty: { status: 400, message: "Empty file" },
+  too_large: { status: 413, message: "File too large" },
+  mime_not_allowed: { status: 415, message: "Only PDF is accepted" },
+  magic_mismatch: { status: 400, message: "File contents do not match declared type" },
+};
 
 // Multipart is a CORS "simple" request — no preflight. We have no
 // state-changing effect today, but burning a user's rate-limit quota
@@ -114,23 +105,23 @@ export async function POST(req: Request): Promise<Response> {
     return jsonError(400, "Missing 'file' field");
   }
 
-  if (candidate.type !== "application/pdf") {
-    return jsonError(415, "Only PDF uploads are supported");
-  }
-
   if (candidate.size > MAX_UPLOAD_BYTES) {
     return jsonError(413, "File too large");
   }
 
   const bytes = new Uint8Array(await candidate.arrayBuffer());
 
+  // validateUpload is the single source of truth for type/size/magic
+  // checks. Don't short-circuit on candidate.type — that bypasses the
+  // shared validator and causes UI/server message drift.
   const validation = validateUpload({
     declaredMime: candidate.type,
     sizeBytes: candidate.size,
     head: bytes.slice(0, 16),
   });
   if (!validation.ok) {
-    return jsonError(statusForFailure(validation.reason), messageForFailure(validation.reason));
+    const { status, message } = FAILURE_RESPONSE[validation.reason];
+    return jsonError(status, message);
   }
 
   const fields = analyzeFormFieldsSchema.safeParse({
