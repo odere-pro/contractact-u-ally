@@ -1,7 +1,12 @@
 import "server-only";
 
 import { getAnthropic } from "@/lib/anthropicClient";
-import { isAnthropicCreditError, mockAnalyzeNdjsonLines } from "@/lib/anthropicFallback";
+import {
+  isAnthropicCreditError,
+  isMockOnlyMode,
+  mockAnalyzeNdjsonLines,
+  mockOcrResult,
+} from "@/lib/anthropicFallback";
 import { classifyContract } from "@/lib/catalog/classifier";
 import { loadRulesForType } from "@/lib/catalog/ruleLoader";
 import { clauseEventSchema, MAX_CONTRACT_BYTES, summaryEventSchema } from "@/lib/catalog/schemas";
@@ -133,7 +138,19 @@ class ContractTextRangeError extends Error {
  */
 export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Uint8Array> {
   const textFactory = opts.textStreamFactory ?? defaultClaudeStream;
-  const ocrFactory = opts.ocrFactory ?? defaultMistralOcr(opts.mistralApiKey);
+  // When Anthropic is unconfigured, the analyze stage will yield mock
+  // NDJSON anyway. Skip Mistral OCR in that case and substitute a
+  // synthetic contract whose text contains every mock clause snippet —
+  // otherwise the real OCR'd text won't match the mock clauses and the
+  // contract pane has no `<mark>` to scroll a card click toward.
+  const ocrFactory =
+    opts.ocrFactory ??
+    (isMockOnlyMode()
+      ? async () => {
+          const m = mockOcrResult();
+          return { ok: true as const, text: m.text, pages: m.pages, durationMs: 0 };
+        }
+      : defaultMistralOcr(opts.mistralApiKey));
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {

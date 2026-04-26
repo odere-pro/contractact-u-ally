@@ -144,3 +144,50 @@ export function mockAnalyzeNdjsonLines(): readonly string[] {
     JSON.stringify(MOCK_SUMMARY) + "\n",
   ];
 }
+
+// Synthetic OCR text used in mock-only mode. Must contain every mock
+// clause's `originalText` verbatim so `splitWithHighlights` produces a
+// `<mark>` for each card — without that, clicking a clause card has no
+// scroll target in the contract preview.
+const MOCK_OCR_TEXT = [
+  "EMPLOYMENT CONTRACT",
+  "Indefinite-term, governed by Dutch labour law.",
+  "",
+  "1. Trial period",
+  "The employee will serve a trial period of six (6) months from the start date.",
+  "",
+  "2. Compensation",
+  "Gross monthly salary: EUR 3,200, paid on the 25th of each month.",
+  "",
+  "3. Working hours",
+  "Standard working week: 40 hours, Monday through Friday.",
+  "",
+  "4. Notice period",
+  "Either party may terminate this contract with one (1) month's written notice.",
+  "",
+  "5. Non-compete",
+  "Employee shall not work for any competitor within the EU for two years after termination.",
+  "",
+  "Signed in duplicate. Each party retains an executed counterpart.",
+].join("\n");
+
+/**
+ * True when there's no Anthropic API key configured, meaning the analyze
+ * stage will fall back to mock NDJSON anyway. The pre-flight check lets
+ * the pipeline skip real OCR and substitute a synthetic contract whose
+ * text contains the mock clause snippets verbatim, so clause-card →
+ * contract-pane scroll/highlight still works in mock mode.
+ */
+export function isMockOnlyMode(): boolean {
+  const key = process.env.ANTHROPIC_API_KEY;
+  return !key || key.trim() === "";
+}
+
+export interface MockOcrResult {
+  readonly text: string;
+  readonly pages: number;
+}
+
+export function mockOcrResult(): MockOcrResult {
+  return { text: MOCK_OCR_TEXT, pages: 1 };
+}
