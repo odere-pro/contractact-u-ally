@@ -82,3 +82,45 @@ Zooming into `runRiskPipeline` and the Rule Catalog:
 - **`ruleLoader`** loads the rules for the detected type and jurisdiction.
 - **`schemas`** holds the zod schemas used to validate the request payload
   and every streamed line — a malformed line is dropped, the stream survives.
+
+---
+
+## 4. Algorithm — how a contract is processed
+
+![Algorithm flow](diagrams/img/algorithm-pipeline.svg)
+
+End-to-end flow with both the client and the server lanes:
+
+1. **Client validation** — UploadZone checks MIME, magic bytes and size before
+   any network call.
+2. **Server validation** — `/api/ocr` re-runs the same checks plus rate
+   limiting; failure returns a 4xx JSON error and **never echoes** the
+   filename or content.
+3. **OCR** — `runMistralOcr` returns `{ text, pages, durationMs }`.
+4. **Analyze request** — the client posts `ocrText` (and optionally
+   `jurisdiction`, `typeId`) to `/api/analyze`.
+5. **Pipeline stages** — `runRiskPipeline` emits `stage` events around three
+   phases: `classify`, `load_rules`, `analyze` (each as `progress: 0` then
+   `progress: 1`).
+6. **Streaming analysis** — Anthropic `messages.stream` yields `text_delta`
+   events. The pipeline buffers, splits on `\n`, and zod-validates each line
+   against `clauseEventSchema` or `summaryEventSchema`.
+7. **Per-line dispatch** — valid lines are encoded and flushed to the client;
+   invalid lines are dropped silently so a single bad token cannot break the
+   stream.
+8. **Persist summary** — once the stream closes, the UI writes the rendered
+   summary (not the contract) to `localStorage`.
+
+**Why streaming end-to-end** — Workers see clauses appear as soon as the
+model emits them. NDJSON is trivially parseable in the browser without a
+streaming JSON parser, and per-line validation contains corruption.
+
+**Failure modes**
+
+| Stage      | Failure                | Behavior                                     |
+| ---------- | ---------------------- | -------------------------------------------- |
+| Upload     | Wrong MIME / oversized | 4xx JSON, no echo of filename                |
+| OCR        | Mistral 5xx / timeout  | 5xx surfaced to client, no retry-storm       |
+| Classify   | Unknown contract type  | Falls back to a generic ruleset              |
+| Stream     | Anthropic disconnect   | Stream closes; partial clauses stay rendered |
+| Validation | Malformed JSON line    | Line dropped, stream continues               |
