@@ -19,9 +19,12 @@ export interface AnalysisState {
   readonly stage: AnalyzeStage | null;
   readonly stageProgress: number;
   readonly ocrText: string;
+  readonly ocrPages: number | null;
   readonly clauses: readonly ClauseEvent[];
   readonly summary: SummaryEvent | null;
   readonly error: string | null;
+  /** Wall-clock ms when this run started; null when idle. */
+  readonly startedAt: number | null;
 }
 
 const INITIAL: AnalysisState = {
@@ -29,9 +32,11 @@ const INITIAL: AnalysisState = {
   stage: null,
   stageProgress: 0,
   ocrText: "",
+  ocrPages: null,
   clauses: [],
   summary: null,
   error: null,
+  startedAt: null,
 };
 
 interface RunArgs {
@@ -94,7 +99,7 @@ export function useAnalysisStream() {
       abortRef.current = controller;
       readerRef.current = null;
 
-      safeSetState(() => ({ ...INITIAL, phase: "running" }));
+      safeSetState(() => ({ ...INITIAL, phase: "running", startedAt: Date.now() }));
 
       const form = new FormData();
       form.append("file", args.file);
@@ -197,7 +202,7 @@ function applyEvent(prev: AnalysisState, event: ServerEvent): AnalysisState {
     case "stage":
       return { ...prev, stage: event.stage, stageProgress: event.progress };
     case "ocr_text":
-      return { ...prev, ocrText: event.text };
+      return { ...prev, ocrText: event.text, ocrPages: event.pages };
     case "clause":
       return { ...prev, clauses: [...prev.clauses, event] };
     case "summary":
@@ -205,7 +210,13 @@ function applyEvent(prev: AnalysisState, event: ServerEvent): AnalysisState {
     case "error":
       // Clear stage + progress so the UI tracker can't carry a stale
       // stage from before the error arrived.
-      return { ...prev, phase: "error", stage: null, stageProgress: 0, error: event.message };
+      return {
+        ...prev,
+        phase: "error",
+        stage: null,
+        stageProgress: 0,
+        error: event.message,
+      };
     default:
       return assertUnreachable(event);
   }
