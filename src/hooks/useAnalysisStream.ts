@@ -39,10 +39,14 @@ const INITIAL: AnalysisState = {
   startedAt: null,
 };
 
+const FREE_TRIAL_STORAGE_KEY = "contractact.freeTrialUsed";
+
 interface RunArgs {
   readonly file: File;
   readonly jurisdiction?: Jurisdiction;
   readonly typeId?: string;
+  /** Called instead of running analysis when the free trial is exhausted. */
+  readonly onPaymentRequired?: () => void;
 }
 
 // Discriminated union of every NDJSON event the server may emit. Every
@@ -92,6 +96,16 @@ export function useAnalysisStream() {
 
   const run = useCallback(
     async (args: RunArgs): Promise<void> => {
+      // Client-side free trial gate — avoids a round-trip when the trial is
+      // already exhausted. The server still enforces via checkEntitlement.
+      if (
+        typeof window !== "undefined" &&
+        window.localStorage.getItem(FREE_TRIAL_STORAGE_KEY) === "true"
+      ) {
+        args.onPaymentRequired?.();
+        return;
+      }
+
       // Cancel any in-flight call before starting a new one.
       abortRef.current?.abort();
       readerRef.current?.cancel().catch(() => {});
@@ -129,6 +143,11 @@ export function useAnalysisStream() {
       if (controller.signal.aborted) return;
 
       if (!response.ok) {
+        if (response.status === 402) {
+          args.onPaymentRequired?.();
+          safeSetState(() => INITIAL);
+          return;
+        }
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         if (controller.signal.aborted) return;
         safeSetState((s) => ({
@@ -162,6 +181,10 @@ export function useAnalysisStream() {
           }
         }
         if (buf.trim()) handleLine(buf);
+        // Mark the free trial as consumed once analysis completes successfully.
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(FREE_TRIAL_STORAGE_KEY, "true");
+        }
         safeSetState((s) => (s.phase === "error" ? s : { ...s, phase: "done" }));
       } catch (err: unknown) {
         if (controller.signal.aborted) return;

@@ -12,6 +12,7 @@ import { ProfilePill } from "@/components/molecules/ProfilePill";
 import { LiveRegion } from "@/components/molecules/LiveRegion";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
 import { useProfile } from "@/hooks/useProfile";
+import { PricingGate } from "@/components/organisms/PricingGate";
 import { PROFILES } from "@/lib/profileCopy";
 import type { AnalyzeStage, Jurisdiction } from "@/lib/catalog/types";
 
@@ -26,6 +27,7 @@ const STAGE_ANNOUNCEMENT: Record<AnalyzeStage, string> = {
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [showPricing, setShowPricing] = useState(false);
   const { state: analysis, run, reset } = useAnalysisStream();
   const { profile, setProfile } = useProfile();
 
@@ -40,7 +42,7 @@ export default function UploadPage() {
   async function submit(): Promise<void> {
     if (!file) return;
     reset();
-    await run({ file, jurisdiction: JURISDICTION });
+    await run({ file, jurisdiction: JURISDICTION, onPaymentRequired: () => setShowPricing(true) });
   }
 
   function startOver(): void {
@@ -81,6 +83,10 @@ export default function UploadPage() {
       findingsTitleRef.current.focus();
     }
   }, [analysis.phase]);
+
+  if (showPricing) {
+    return <PricingGate onBack={() => setShowPricing(false)} />;
+  }
 
   // Results mode: viewport-takeover 3-pane. The upload UI, dropzone,
   // and tracker collapse into a thin toolbar so the analysis owns the

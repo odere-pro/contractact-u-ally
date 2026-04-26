@@ -1,6 +1,7 @@
 import "server-only";
 
 import { rateLimit } from "@/lib/rateLimit";
+import { checkEntitlement, reportUsage } from "@/lib/solvimon";
 import { analyzeFormFieldsSchema } from "@/lib/catalog/schemas";
 import { runRiskPipeline } from "@/lib/pipeline/runRiskPipeline";
 import {
@@ -90,6 +91,26 @@ export async function POST(req: Request): Promise<Response> {
     return jsonError(503, "OCR service not configured");
   }
 
+  // Billing gate — anonymous users are always allowed (free trial is
+  // enforced client-side). When customer auth is added, pass customerId here.
+  const entitlement = await checkEntitlement(undefined);
+  if (!entitlement.allowed) {
+    if (entitlement.rateLimited) {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (entitlement.retryAfterSec !== undefined) {
+        headers["Retry-After"] = String(entitlement.retryAfterSec);
+      }
+      return new Response(JSON.stringify({ error: "Service temporarily unavailable" }), {
+        status: 503,
+        headers,
+      });
+    }
+    return new Response(
+      JSON.stringify({ error: "Analysis limit reached.", checkoutUrl: entitlement.checkoutUrl }),
+      { status: 402, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   // Cheap reject before we let Node's multipart parser buffer the body.
   // Browsers always set Content-Length on multipart bodies; the value
   // can be spoofed but the per-file size check after parse is the
@@ -147,6 +168,15 @@ export async function POST(req: Request): Promise<Response> {
     mistralApiKey: apiKey,
     jurisdiction: fields.data.jurisdiction,
     typeId: fields.data.typeId,
+  });
+
+  // Fire-and-forget usage report. customerId is undefined for anonymous
+  // users — reportUsage is a no-op in that case. When auth is added,
+  // pass the resolved customerId here.
+  void reportUsage(undefined, {
+    jurisdiction: fields.data.jurisdiction,
+    typeId: fields.data.typeId,
+    contractSizeKb: Math.round(candidate.size / 1024),
   });
 
   return new Response(stream, {
