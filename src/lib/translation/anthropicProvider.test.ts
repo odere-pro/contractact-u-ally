@@ -45,6 +45,24 @@ describe("anthropicTranslationProvider", () => {
     );
   });
 
+  it("maps an SDK timeout error to TranslationUnavailableError", async () => {
+    const create = vi.fn(async () => {
+      throw Object.assign(new Error("Request timed out."), {
+        name: "APIConnectionTimeoutError",
+      });
+    });
+    vi.doMock("@/lib/anthropicClient", () => ({
+      getAnthropic: () => ({ messages: { create } }),
+    }));
+
+    const { anthropicTranslationProvider } = await import("./anthropicProvider");
+    const { TranslationUnavailableError } = await import("./provider");
+
+    await expect(anthropicTranslationProvider.translate("nl", items)).rejects.toBeInstanceOf(
+      TranslationUnavailableError,
+    );
+  });
+
   it("re-throws non-credit, non-auth errors so the route returns 502", async () => {
     const create = vi.fn(async () => {
       throw new Error("kaboom");
