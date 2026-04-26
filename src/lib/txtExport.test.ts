@@ -60,23 +60,13 @@ const clauses: readonly ClauseEvent[] = [
 
 describe("txtExport", () => {
   it("renders a deterministic, sorted report", () => {
-    const report = buildTxtReport({
-      summary,
-      clauses,
-      profile: "migrant_worker",
-      generatedAt: fixedDate,
-    });
+    const report = buildTxtReport({ summary, clauses, generatedAt: fixedDate });
     expect(report).toMatchSnapshot();
   });
 
   it("works without a summary", () => {
-    const report = buildTxtReport({
-      summary: null,
-      clauses: [],
-      profile: "student",
-      generatedAt: fixedDate,
-    });
-    expect(report).toContain("Profile: Student");
+    const report = buildTxtReport({ summary: null, clauses: [], generatedAt: fixedDate });
+    expect(report).toContain("Audience: Migrant Worker");
     expect(report).not.toContain("Summary:");
   });
 
