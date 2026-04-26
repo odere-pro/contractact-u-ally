@@ -18,6 +18,11 @@ const SCAN_DIRS = [
   "src/app",
 ];
 const SKIP_DIRS = new Set(["src/components/ui"]);
+// `src/app/global-error.tsx` runs when the root layout itself fails, so
+// globals.css and @theme tokens may not have loaded — Next.js docs
+// require it to be self-contained. The few hex colors there are
+// intentional and should not trip the guard.
+const SKIP_FILES = new Set(["src/app/global-error.tsx"]);
 const TARGET_EXT = /\.(tsx|ts)$/;
 
 // Hex colors and rgb()/rgba() literals.
@@ -45,6 +50,7 @@ function walk(dir) {
     }
     if (!TARGET_EXT.test(entry)) continue;
     if (entry.endsWith(".test.ts") || entry.endsWith(".test.tsx")) continue;
+    if (SKIP_FILES.has(rel)) continue;
     const content = readFileSync(full, "utf8");
     // Strip Tailwind-ish utility classes from data we scan — we only flag
     // values inside `style={{ ... }}` literals or raw color hex.

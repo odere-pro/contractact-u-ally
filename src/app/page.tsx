@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { UploadZone } from "@/components/organisms/UploadZone";
 import { StageTracker, type TrackerStage } from "@/components/organisms/StageTracker";
 import { ResultsLayout } from "@/components/organisms/ResultsLayout";
+import { ErrorBoundary } from "@/components/organisms/ErrorBoundary";
 import { LanguageSwitcher } from "@/components/molecules/LanguageSwitcher";
 import { LiveRegion } from "@/components/molecules/LiveRegion";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
@@ -155,12 +156,32 @@ export default function UploadPage() {
         )}
 
         <div className="min-h-0 flex-1" data-testid="analyze-result">
-          <ResultsLayout
-            ocrText={translated.ocrText}
-            clauses={translated.clauses}
-            summary={analysis.summary}
-            voice={voice}
-          />
+          <ErrorBoundary
+            fallback={(error, reset) => (
+              <div className="mx-auto flex max-w-2xl flex-col gap-3 px-6 py-12">
+                <Alert variant="destructive" data-testid="results-error-fallback">
+                  <AlertTitle>The results pane crashed.</AlertTitle>
+                  <AlertDescription>
+                    Your contract is still loaded — try again, or start over with a fresh upload.
+                    {error.message ? ` (${error.message})` : ""}
+                  </AlertDescription>
+                </Alert>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={startOver}>
+                    Start over
+                  </Button>
+                  <Button onClick={reset}>Try again</Button>
+                </div>
+              </div>
+            )}
+          >
+            <ResultsLayout
+              ocrText={translated.ocrText}
+              clauses={translated.clauses}
+              summary={analysis.summary}
+              voice={voice}
+            />
+          </ErrorBoundary>
         </div>
       </div>
     );

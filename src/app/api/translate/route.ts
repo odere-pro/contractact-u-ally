@@ -8,8 +8,14 @@ import {
   isAnthropicCreditError,
   isMockOnlyMode,
 } from "@/lib/anthropicFallback";
+import { jsonError, jsonOk } from "@/lib/apiResponse";
 import { rateLimit } from "@/lib/rateLimit";
-import { UI_LANGUAGES, type TranslateResponse, type UiLanguage } from "@/lib/translation/types";
+import {
+  UI_LANGUAGES,
+  type TranslateItem,
+  type TranslateResponse,
+  type UiLanguage,
+} from "@/lib/translation/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -33,25 +39,15 @@ const requestSchema = z.object({
   items: z.array(itemSchema).min(1).max(MAX_ITEMS),
 });
 
+// Server-side display names used in error copy and in the system prompt
+// to Claude. Distinct from `UI_LANGUAGE_LABEL` (`src/lib/translation/
+// types.ts`), which is the in-product switcher label — keep both in sync
+// when adding a new language.
 const LANGUAGE_NAME: Record<UiLanguage, string> = {
   en: "English",
   nl: "Dutch (Nederlands)",
   sv: "Swedish (Svenska)",
 };
-
-function jsonError(status: number, message: string): Response {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-function jsonOk(payload: TranslateResponse): Response {
-  return new Response(JSON.stringify(payload), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-}
 
 const utf8ByteLength = (s: string): number => new TextEncoder().encode(s).byteLength;
 
@@ -87,10 +83,16 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
+  // Single helper so every "return the source text" branch returns the
+  // same response shape; keeps the success type narrow without polluting
+  // each call site with explicit generics.
+  const okWithItems = (translations: readonly TranslateItem[]): Response =>
+    jsonOk<TranslateResponse>({ translations });
+
   // No-op when the user picks the source language — saves a model call
   // and keeps round-trip cost predictable.
   if (targetLang === "en") {
-    return jsonOk({ translations: items });
+    return okWithItems(items);
   }
 
   if (isMockOnlyMode()) {
@@ -104,7 +106,7 @@ export async function POST(req: Request): Promise<Response> {
     // client-supplied ids) closes a spoofability hole: a crafted
     // request with `id: "c:mock-trial-period:title"` would otherwise
     // receive canned text regardless of the contract on screen.
-    return jsonOk({ translations: getMockTranslations(targetLang, items) });
+    return okWithItems(getMockTranslations(targetLang, items));
   }
 
   // FIXME(demo-hack): translation should ship as a server-side cache of
@@ -117,7 +119,7 @@ export async function POST(req: Request): Promise<Response> {
   const systemPrompt = buildSystemPrompt(targetLang);
   const userMessage = JSON.stringify({ items });
 
-  let translated: readonly { id: string; text: string }[];
+  let translated: readonly TranslateItem[];
   try {
     translated = await runTranslation(systemPrompt, userMessage, items);
   } catch (err) {
@@ -127,13 +129,19 @@ export async function POST(req: Request): Promise<Response> {
       // the analyze stage ran for real and the inbound items belong to
       // a real uploaded contract. Returning canned mock text here would
       // be wrong — degrade to source text so the UI keeps working.
-      return jsonOk({ translations: items });
+      return okWithItems(items);
     }
     console.error("/api/translate failure:", err);
-    return jsonError(502, "Translation service failed");
+    // Specific over generic: tell the user which target failed and what
+    // they can do next. `targetLang` is Zod-validated to UI_LANGUAGES so
+    // there's no injection risk in the response body.
+    return jsonError(
+      502,
+      `Could not translate to ${LANGUAGE_NAME[targetLang]}. Try again or switch back to English.`,
+    );
   }
 
-  return jsonOk({ translations: translated });
+  return okWithItems(translated);
 }
 
 function buildSystemPrompt(targetLang: UiLanguage): string {
@@ -156,8 +164,8 @@ const responseSchema = z.object({
 async function runTranslation(
   systemPrompt: string,
   userMessage: string,
-  fallback: readonly { id: string; text: string }[],
-): Promise<readonly { id: string; text: string }[]> {
+  fallback: readonly TranslateItem[],
+): Promise<readonly TranslateItem[]> {
   const anthropic = getAnthropic();
   const response = await anthropic.messages.create({
     model: TRANSLATE_MODEL,
