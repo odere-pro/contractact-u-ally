@@ -187,12 +187,18 @@ function applyEvent(prev: AnalysisState, event: ServerEvent): AnalysisState {
     case "summary":
       return { ...prev, summary: event };
     case "error":
-      return { ...prev, phase: "error", error: event.message };
+      // Clear stage + progress so the UI tracker can't carry a stale
+      // stage from before the error arrived.
+      return { ...prev, phase: "error", stage: null, stageProgress: 0, error: event.message };
     default:
       return assertUnreachable(event);
   }
 }
 
+class UnhandledServerEventError extends Error {
+  override readonly name = "UnhandledServerEventError";
+}
+
 function assertUnreachable(x: never): never {
-  throw new Error(`Unhandled server event variant: ${JSON.stringify(x)}`);
+  throw new UnhandledServerEventError(`Unhandled server event variant: ${JSON.stringify(x)}`);
 }
