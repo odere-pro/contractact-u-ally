@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — contractact-u-ally",
+  title: "Privacy Policy — contract-u-ally",
   description:
-    "How contractact-u-ally handles uploaded employment contracts: in-memory processing, no persistence, third-party LLM disclosure.",
+    "How contract-u-ally handles uploaded employment contracts: in-memory processing, no persistence, third-party LLM disclosure.",
 };
 
 export default function PrivacyPage() {

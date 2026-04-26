@@ -1,4 +1,4 @@
-/* contractact-u-ally design tokens.
+/* contract-u-ally design tokens.
  *
  * Layered on top of shadcn primitives. Components reference these via
  * var(--token), never via hardcoded values (enforced by guard:tokens).

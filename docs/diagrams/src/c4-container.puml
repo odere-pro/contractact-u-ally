@@ -4,11 +4,11 @@
 LAYOUT_LEFT_RIGHT()
 HIDE_STEREOTYPE()
 
-title Containers — contractact-u-ally
+title Containers — contract-u-ally
 
 Person(worker, "Worker")
 
-System_Boundary(app, "contractact-u-ally") {
+System_Boundary(app, "contract-u-ally") {
   Container(ui, "Web UI", "Next.js / React")
   Container(api, "/api/analyze", "Route handler")
   Container(pipeline, "runRiskPipeline", "Pipeline module")

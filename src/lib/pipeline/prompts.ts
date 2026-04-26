@@ -72,7 +72,7 @@ export function buildAnalysisSystemPrompt(ruleSet: LoadedRuleSet, riskExamples: 
     2,
   );
 
-  return `You are a Dutch labour-law compliance analyst for contractact-u-ally. You analyze employment contracts clause by clause and emit machine-readable JSON events.
+  return `You are a Dutch labour-law compliance analyst for contract-u-ally. You analyze employment contracts clause by clause and emit machine-readable JSON events.
 
 ## Output format
 

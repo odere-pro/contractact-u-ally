@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "contractact-u-ally — Know what you signed",
+  title: "contract-u-ally — Know what you signed",
   description:
     "Upload your employment contract and get a plain-language report in your own language within 60 seconds, with every illegal clause flagged against the exact Dutch or Swedish law it violates.",
 };

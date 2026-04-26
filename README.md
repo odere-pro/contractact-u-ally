@@ -1,10 +1,10 @@
 <div align="center">
 
-# contractact-u-ally
+# contract-u-ally
 
 **Know what you signed — in 60 seconds, in your language.**
 
-[![CI](https://github.com/odere-pro/contractact-u-ally/actions/workflows/ci.yml/badge.svg)](https://github.com/odere-pro/contractact-u-ally/actions/workflows/ci.yml)
+[![CI](https://github.com/odere-pro/contract-u-ally/actions/workflows/ci.yml/badge.svg)](https://github.com/odere-pro/contract-u-ally/actions/workflows/ci.yml)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
@@ -22,7 +22,7 @@ This repository is the **scaffold**: tech stack, tooling, Claude Code config, an
 
 ## Why it exists
 
-Most workers — especially migrants — never learn what their contract actually says. The text is dense, the language is foreign, and labor-law literacy is expensive. Illegal probation lengths, unenforceable non-competes, and underpaid overtime all hide in plain sight. `contractact-u-ally` reads the contract, checks it against the real labor code, and explains what's wrong in the language the worker speaks.
+Most workers — especially migrants — never learn what their contract actually says. The text is dense, the language is foreign, and labor-law literacy is expensive. Illegal probation lengths, unenforceable non-competes, and underpaid overtime all hide in plain sight. `contract-u-ally` reads the contract, checks it against the real labor code, and explains what's wrong in the language the worker speaks.
 
 ## Tech stack
 
@@ -39,8 +39,8 @@ Most workers — especially migrants — never learn what their contract actuall
 ## Quick start
 
 ```bash
-git clone https://github.com/odere-pro/contractact-u-ally.git
-cd contractact-u-ally
+git clone https://github.com/odere-pro/contract-u-ally.git
+cd contract-u-ally
 npm install
 cp .env.example .env.local   # fill in ANTHROPIC_API_KEY
 npm run dev                  # → http://localhost:3000

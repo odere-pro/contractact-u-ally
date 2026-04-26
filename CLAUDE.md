@@ -1,4 +1,4 @@
-# contractact-u-ally
+# contract-u-ally
 
 > A worker uploads their employment contract and gets a plain-language report
 > in their own language within 60 seconds — every illegal clause flagged

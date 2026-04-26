@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Preflight validator for contractact-u-ally.
+# Preflight validator for contract-u-ally.
 #
 # Exits 0 only if every check passes. Prints [OK]/[FAIL] per check so a
 # single failure points at the section to fix.

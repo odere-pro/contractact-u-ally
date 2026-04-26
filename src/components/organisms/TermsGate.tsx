@@ -60,7 +60,7 @@ export function TermsGate({ children }: TermsGateProps) {
       <Dialog open={open}>
         <DialogContent
           title="Terms & Conditions"
-          description="Review the terms below. Accept to continue using contractact-u-ally."
+          description="Review the terms below. Accept to continue using contract-u-ally."
           hideCloseButton
           className="sm:w-[min(560px,92%)]"
         >
@@ -77,7 +77,7 @@ export function TermsGate({ children }: TermsGateProps) {
               <div className="flex flex-col gap-1.5">
                 <dt className="text-foreground font-semibold">1. Service overview</dt>
                 <dd className="text-muted-foreground leading-relaxed">
-                  contractact-u-ally analyzes employment contracts to flag clauses that may conflict
+                  contract-u-ally analyzes employment contracts to flag clauses that may conflict
                   with applicable labour law and to surface their practical impact.
                 </dd>
               </div>
