@@ -66,7 +66,7 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
     <div className="flex h-full min-h-0 flex-col" data-testid="results-layout">
       <HitlBanner illegalCount={illegalCount} onConnectLegalAid={() => setShareOpen(true)} />
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[260px_minmax(520px,1fr)_400px]">
+      <div className="mx-auto grid min-h-0 w-full max-w-[1480px] flex-1 grid-cols-1 lg:grid-cols-[260px_minmax(520px,820px)_400px]">
         <div className="border-border min-h-0 overflow-y-auto border-b lg:border-r lg:border-b-0">
           <RiskRail filter={filter} onToggleSeverity={handleToggleSeverity} />
         </div>
