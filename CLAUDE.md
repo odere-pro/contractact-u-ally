@@ -2,7 +2,8 @@
 
 > A worker uploads their employment contract and gets a plain-language report
 > in their own language within 60 seconds — every illegal clause flagged
-> against the exact Dutch (or Swedish) law it violates, with clear next steps.
+> against the exact Dutch law it violates (Swedish jurisdiction planned, not
+> yet shipped), with clear next steps.
 
 **Tagline:** _"Know what you signed."_
 

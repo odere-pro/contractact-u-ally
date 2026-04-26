@@ -128,7 +128,7 @@ Server Component wrapper, "use client" only on the dropzone.
 ### Contract analysis route
 
 ```
-Implement POST /api/analyze. Accept { ocrText: string, locale: "nl" | "sv" }.
+Implement POST /api/analyze. Accept { ocrText: string, jurisdiction?: "nl" }.
 Validate with zod. Call the Anthropic client with a structured-output prompt
 that returns { clauses: Array<{ text, isIllegal, law, explanation }> }.
 Never log ocrText. Stub model call behind src/lib/analyze.ts so tests can mock.
