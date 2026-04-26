@@ -5,12 +5,14 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadZone } from "@/components/organisms/UploadZone";
 import { StageTracker, type TrackerStage } from "@/components/organisms/StageTracker";
-import { ClauseList } from "@/components/organisms/ClauseList";
+import { ResultsLayout } from "@/components/organisms/ResultsLayout";
+import { ProfilePill } from "@/components/molecules/ProfilePill";
 import { LiveRegion } from "@/components/molecules/LiveRegion";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
+import { useProfile } from "@/hooks/useProfile";
+import { PROFILES } from "@/lib/profileCopy";
 import type { AnalyzeStage } from "@/lib/catalog/types";
 
 // Validate /api/ocr responses at the boundary so a server-shape change
@@ -36,7 +38,9 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [ocrPhase, setOcrPhase] = useState<OcrPhase>("idle");
   const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrText, setOcrText] = useState<string>("");
   const { state: analysis, run, reset } = useAnalysisStream();
+  const { profile, setProfile } = useProfile();
 
   const alertRef = useRef<HTMLDivElement>(null);
   const findingsTitleRef = useRef<HTMLDivElement>(null);
@@ -92,6 +96,7 @@ export default function UploadPage() {
       const success = ocrSuccessSchema.safeParse(raw);
       if (response.ok && success.success) {
         ocr = success.data;
+        setOcrText(ocr.text);
         setOcrPhase("done");
       } else {
         const errBody = ocrErrorSchema.safeParse(raw);
@@ -185,24 +190,32 @@ export default function UploadPage() {
       )}
 
       {showFindings && (
-        <Card data-testid="analyze-result">
-          <CardHeader>
-            <CardTitle ref={findingsTitleRef} tabIndex={-1}>
-              Findings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {analysis.summary && (
-              <p className="text-muted-foreground text-sm">
-                {analysis.summary.totalClauses} clauses analyzed ·{" "}
-                <strong className="text-destructive">{analysis.summary.illegalCount}</strong>{" "}
-                illegal · {analysis.summary.exploitativeCount} exploitative ·{" "}
-                {analysis.summary.compliantCount} compliant
-              </p>
-            )}
-            <ClauseList clauses={analysis.clauses} />
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-4" data-testid="analyze-result">
+          <div
+            ref={findingsTitleRef}
+            tabIndex={-1}
+            className="flex flex-wrap items-center gap-2 outline-none"
+          >
+            <h2 className="text-lg font-semibold">Findings</h2>
+            <span className="text-muted-foreground text-sm" aria-live="polite">
+              {analysis.summary
+                ? `${analysis.summary.totalClauses} clauses · ${analysis.summary.illegalCount} illegal`
+                : `${analysis.clauses.length} streaming…`}
+            </span>
+            <span className="grow" />
+            <div role="radiogroup" aria-label="Reading lens" className="flex flex-wrap gap-1.5">
+              {PROFILES.map((p) => (
+                <ProfilePill key={p} profile={p} active={p === profile} onSelect={setProfile} />
+              ))}
+            </div>
+          </div>
+          <ResultsLayout
+            ocrText={ocrText}
+            clauses={analysis.clauses}
+            summary={analysis.summary}
+            profile={profile}
+          />
+        </div>
       )}
     </section>
   );
