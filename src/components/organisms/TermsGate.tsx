@@ -53,8 +53,21 @@ export function TermsGate({ children }: TermsGateProps) {
         </div>
       )}
       <Dialog open={open}>
-        <DialogContent title="Terms & Conditions" hideCloseButton className="sm:w-[min(560px,92%)]">
-          <div className="border-border -mx-6 max-h-[55vh] overflow-y-auto border-y px-6 py-5">
+        <DialogContent
+          title="Terms & Conditions"
+          description="Review the terms below. Accept to continue using contractact-u-ally."
+          hideCloseButton
+          className="sm:w-[min(560px,92%)]"
+        >
+          {/* -mx-6/px-6 deliberately mirrors DialogContent's p-6 (see ui/dialog.tsx)
+              so the divider reaches the popup's edges. tabIndex + role expose the
+              region to keyboard-only users so the scrollbar is reachable. */}
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label="Terms and conditions content"
+            className="border-border -mx-6 max-h-[55vh] overflow-y-auto border-y px-6 py-5 focus-visible:outline-2"
+          >
             <dl className="flex flex-col gap-5 text-sm">
               <div className="flex flex-col gap-1.5">
                 <dt className="text-foreground font-semibold">1. Service overview</dt>
