@@ -3,8 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
-import type { ClauseEvent } from "@/lib/catalog/types";
+import type { ClauseEvent, ClauseStatus } from "@/lib/catalog/types";
 import { UI_LANGUAGES, type TranslateItem, type UiLanguage } from "@/lib/translation/types";
+
+// "Risk items" = clauses the user actually needs translated to act on.
+// `compliant` and `unchecked` cards are informational and stay in the
+// source language — translating them burns model budget and adds latency
+// without changing what the user does next. The OCR preview pane is also
+// left untranslated for the same reason.
+const RISK_STATUSES: ReadonlySet<ClauseStatus> = new Set([
+  "illegal",
+  "exploitative",
+  "permit_conflict",
+]);
+const isRiskClause = (clause: ClauseEvent): boolean => RISK_STATUSES.has(clause.status);
 
 interface UseTranslatedAnalysisArgs {
   readonly ocrText: string;
@@ -149,7 +161,7 @@ export function useTranslatedAnalysis({
   }, [ready, language, snapshot, pending]);
 
   async function fetchTranslation(target: UiLanguage): Promise<void> {
-    const items: TranslateItem[] = buildItems(ocrText, clauses);
+    const items: TranslateItem[] = buildItems(clauses);
     if (items.length === 0) {
       setLanguageState(target);
       setSnapshot({ ocrText, clauses });
@@ -228,10 +240,10 @@ export function useTranslatedAnalysis({
   };
 }
 
-function buildItems(ocrText: string, clauses: readonly ClauseEvent[]): TranslateItem[] {
+function buildItems(clauses: readonly ClauseEvent[]): TranslateItem[] {
   const items: TranslateItem[] = [];
-  if (ocrText) items.push({ id: ID.ocr, text: ocrText });
   for (const clause of clauses) {
+    if (!isRiskClause(clause)) continue;
     if (clause.title) items.push({ id: ID.title(clause.id), text: clause.title });
     if (clause.originalText) {
       items.push({ id: ID.original(clause.id), text: clause.originalText });

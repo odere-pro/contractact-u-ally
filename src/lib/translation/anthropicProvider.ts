@@ -3,7 +3,11 @@ import "server-only";
 import { z } from "zod";
 
 import { getAnthropic } from "@/lib/anthropicClient";
-import { isAnthropicAuthError, isAnthropicCreditError } from "@/lib/anthropicErrors";
+import {
+  isAnthropicAuthError,
+  isAnthropicCreditError,
+  isAnthropicTimeoutError,
+} from "@/lib/anthropicErrors";
 
 import {
   TranslationUnavailableError,
@@ -16,6 +20,10 @@ const NAME = "anthropic";
 
 const TRANSLATE_MODEL = "claude-haiku-4-5-20251001";
 const TRANSLATE_MAX_TOKENS = 8192;
+// Leaves ~5s of headroom under the route's maxDuration so a stalled model
+// call surfaces as a TranslationUnavailableError (→ 503 with friendly copy)
+// instead of being killed mid-request by the platform.
+const TRANSLATE_TIMEOUT_MS = 25_000;
 
 const LANGUAGE_NAME: Record<UiLanguage, string> = {
   en: "English",
@@ -60,18 +68,24 @@ export const anthropicTranslationProvider: TranslationProvider = {
 
     let response;
     try {
-      response = await getAnthropic().messages.create({
-        model: TRANSLATE_MODEL,
-        max_tokens: TRANSLATE_MAX_TOKENS,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }],
-      });
+      response = await getAnthropic().messages.create(
+        {
+          model: TRANSLATE_MODEL,
+          max_tokens: TRANSLATE_MAX_TOKENS,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userMessage }],
+        },
+        { timeout: TRANSLATE_TIMEOUT_MS },
+      );
     } catch (err) {
       if (isAnthropicCreditError(err)) {
         throw new TranslationUnavailableError("Anthropic credit exhausted", NAME);
       }
       if (isAnthropicAuthError(err)) {
         throw new TranslationUnavailableError("Anthropic API key missing or invalid", NAME);
+      }
+      if (isAnthropicTimeoutError(err)) {
+        throw new TranslationUnavailableError("Anthropic translation timed out", NAME);
       }
       throw err;
     }

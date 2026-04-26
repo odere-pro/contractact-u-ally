@@ -37,6 +37,26 @@ export function isAnthropicCreditError(err: unknown): boolean {
   return status === 402;
 }
 
+// Detect SDK-level request timeouts (per-call `timeout` option exceeded, or
+// the SDK's own connection-timeout class). Callers map this to the same
+// "temporarily unavailable" path as credit/auth failures so a slow model
+// run surfaces a 503 instead of hanging until Vercel's maxDuration kills
+// the route.
+export function isAnthropicTimeoutError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+
+  const name = (err as { name?: unknown }).name;
+  if (typeof name === "string" && name === "APIConnectionTimeoutError") return true;
+
+  const message = (err as { message?: unknown }).message;
+  if (typeof message === "string") {
+    const text = message.toLowerCase();
+    if (text.includes("timed out") || text.includes("timeout")) return true;
+  }
+
+  return false;
+}
+
 // Detect missing / invalid API key failures so callers can surface the same
 // "translation unavailable" copy as credit exhaustion. Without this, an
 // unset ANTHROPIC_API_KEY (or a rotated key) is treated as a generic
