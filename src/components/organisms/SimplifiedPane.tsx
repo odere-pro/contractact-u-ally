@@ -10,14 +10,13 @@ import {
   applySeverityFilter,
   type SeverityFilter,
 } from "@/lib/clauseFilters";
-import { PROFILE_LABEL, PROFILE_TAGLINE, type Profile } from "@/lib/profileCopy";
+import { MIGRANT_WORKER_LABEL, MIGRANT_WORKER_TAGLINE } from "@/lib/profileCopy";
 import { sortBySeverity } from "@/lib/severity";
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
 
 interface SimplifiedPaneProps {
   readonly clauses: readonly ClauseEvent[];
   readonly summary: SummaryEvent | null;
-  readonly profile: Profile;
   readonly filter?: SeverityFilter;
   readonly activeId?: string | null;
   readonly onSelectClause?: (id: string) => void;
@@ -31,7 +30,6 @@ interface SimplifiedPaneProps {
 export function SimplifiedPane({
   clauses,
   summary,
-  profile,
   filter = ALL_SEVERITIES_SHOWN,
   activeId = null,
   onSelectClause,
@@ -49,9 +47,9 @@ export function SimplifiedPane({
       className="flex flex-col gap-3 p-4"
     >
       <header className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-        For you · {PROFILE_LABEL[profile]}
+        For you · {MIGRANT_WORKER_LABEL}
       </header>
-      <p className="text-muted-foreground text-xs">{PROFILE_TAGLINE[profile]}</p>
+      <p className="text-muted-foreground text-xs">{MIGRANT_WORKER_TAGLINE}</p>
 
       {allClear && (
         <Card className="border-ok border-2">

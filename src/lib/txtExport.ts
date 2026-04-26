@@ -3,27 +3,25 @@
 // owns the resulting Blob (they pick the filename and where to save).
 
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
-import type { Profile } from "@/lib/profileCopy";
-import { PROFILE_LABEL } from "@/lib/profileCopy";
+import { MIGRANT_WORKER_LABEL } from "@/lib/profileCopy";
 import { SEVERITY_LABEL, severityOf, sortBySeverity } from "@/lib/severity";
 
 interface BuildArgs {
   readonly summary: SummaryEvent | null;
   readonly clauses: readonly ClauseEvent[];
-  readonly profile: Profile;
   readonly generatedAt: Date;
 }
 
 const DIVIDER = "─".repeat(64);
 
 export function buildTxtReport(args: BuildArgs): string {
-  const { summary, clauses, profile, generatedAt } = args;
+  const { summary, clauses, generatedAt } = args;
   const sorted = sortBySeverity(clauses);
   const lines: string[] = [];
 
   lines.push("CONTRACTACT-U-ALLY · simplified report");
   lines.push(
-    `Profile: ${PROFILE_LABEL[profile]} · Generated: ${generatedAt.toISOString().slice(0, 10)}`,
+    `Audience: ${MIGRANT_WORKER_LABEL} · Generated: ${generatedAt.toISOString().slice(0, 10)}`,
   );
   if (summary) {
     lines.push(

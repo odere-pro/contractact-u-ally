@@ -10,14 +10,12 @@ import { SimplifiedPane } from "@/components/organisms/SimplifiedPane";
 import { WhyDrawer } from "@/components/organisms/WhyDrawer";
 import { HitlBanner } from "@/components/molecules/HitlBanner";
 import { ALL_SEVERITIES_SHOWN, type SeverityFilter } from "@/lib/clauseFilters";
-import { showsLegalAidEscalation, type Profile } from "@/lib/profileCopy";
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
 
 interface ResultsLayoutProps {
   readonly ocrText: string;
   readonly clauses: readonly ClauseEvent[];
   readonly summary: SummaryEvent | null;
-  readonly profile: Profile;
 }
 
 // 3-pane results surface. Owns transient UI state — active clause,
@@ -30,7 +28,7 @@ interface ResultsLayoutProps {
 // generous minmax floor so the contract text never collapses to a
 // word-per-line wrap. Below ~1024px we fall back to a stacked layout
 // so each pane is still individually readable.
-export function ResultsLayout({ ocrText, clauses, summary, profile }: ResultsLayoutProps) {
+export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps) {
   const [activeId, setActiveId] = useState<string | null>(clauses[0]?.id ?? null);
   const [filter, setFilter] = useState<SeverityFilter>(ALL_SEVERITIES_SHOWN);
   const [whyClause, setWhyClause] = useState<ClauseEvent | null>(null);
@@ -57,9 +55,7 @@ export function ResultsLayout({ ocrText, clauses, summary, profile }: ResultsLay
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="results-layout">
-      {showsLegalAidEscalation(profile) && (
-        <HitlBanner illegalCount={illegalCount} onConnectLegalAid={() => setShareOpen(true)} />
-      )}
+      <HitlBanner illegalCount={illegalCount} onConnectLegalAid={() => setShareOpen(true)} />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[260px_minmax(520px,1fr)_400px]">
         <div className="border-border min-h-0 overflow-y-auto border-b lg:border-r lg:border-b-0">
@@ -78,7 +74,6 @@ export function ResultsLayout({ ocrText, clauses, summary, profile }: ResultsLay
           <SimplifiedPane
             clauses={clauses}
             summary={summary}
-            profile={profile}
             filter={filter}
             activeId={activeId}
             onSelectClause={handleSelectClause}
@@ -89,13 +84,12 @@ export function ResultsLayout({ ocrText, clauses, summary, profile }: ResultsLay
 
       <ResultsFooter onShare={() => setShareOpen(true)} />
 
-      <WhyDrawer clause={whyClause} profile={profile} open={whyOpen} onOpenChange={setWhyOpen} />
+      <WhyDrawer clause={whyClause} open={whyOpen} onOpenChange={setWhyOpen} />
       <ShareDialog
         open={shareOpen}
         onOpenChange={setShareOpen}
         summary={summary}
         clauses={clauses}
-        profile={profile}
       />
     </div>
   );

@@ -8,11 +8,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UploadZone } from "@/components/organisms/UploadZone";
 import { StageTracker, type TrackerStage } from "@/components/organisms/StageTracker";
 import { ResultsLayout } from "@/components/organisms/ResultsLayout";
-import { ProfilePill } from "@/components/molecules/ProfilePill";
 import { LiveRegion } from "@/components/molecules/LiveRegion";
+import { Badge } from "@/components/ui/badge";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
-import { useProfile } from "@/hooks/useProfile";
-import { PROFILES } from "@/lib/profileCopy";
+import { MIGRANT_WORKER_LABEL } from "@/lib/profileCopy";
 import type { AnalyzeStage, Jurisdiction } from "@/lib/catalog/types";
 
 const JURISDICTION: Jurisdiction = "nl";
@@ -27,7 +26,6 @@ const STAGE_ANNOUNCEMENT: Record<AnalyzeStage, string> = {
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const { state: analysis, run, reset } = useAnalysisStream();
-  const { profile, setProfile } = useProfile();
 
   const alertRef = useRef<HTMLDivElement>(null);
   const findingsTitleRef = useRef<HTMLHeadingElement>(null);
@@ -124,11 +122,10 @@ export default function UploadPage() {
             </span>
           </h1>
           <span className="grow" />
-          <div role="radiogroup" aria-label="Reading lens" className="flex flex-wrap gap-1.5">
-            {PROFILES.map((p) => (
-              <ProfilePill key={p} profile={p} active={p === profile} onSelect={setProfile} />
-            ))}
-          </div>
+          {/* Static audience indicator — the product currently ships
+              for migrant workers only. Non-interactive: no role, no
+              click handler. */}
+          <Badge aria-label={`Audience: ${MIGRANT_WORKER_LABEL}`}>{MIGRANT_WORKER_LABEL}</Badge>
         </div>
 
         <div className="min-h-0 flex-1" data-testid="analyze-result">
@@ -136,7 +133,6 @@ export default function UploadPage() {
             ocrText={analysis.ocrText}
             clauses={analysis.clauses}
             summary={analysis.summary}
-            profile={profile}
           />
         </div>
       </div>

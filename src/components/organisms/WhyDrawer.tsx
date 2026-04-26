@@ -4,21 +4,19 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SectionRef } from "@/components/atoms/SectionRef";
 import { SeverityBadge } from "@/components/molecules/SeverityBadge";
 import { Card, CardContent } from "@/components/ui/card";
-import { PROFILE_LABEL, type Profile } from "@/lib/profileCopy";
+import { MIGRANT_WORKER_LABEL } from "@/lib/profileCopy";
 import { severityOf } from "@/lib/severity";
 import type { ClauseEvent } from "@/lib/catalog/types";
 
 interface WhyDrawerProps {
   readonly clause: ClauseEvent | null;
-  readonly profile: Profile;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
 }
 
 // Side drawer that explains a single clause's risk: severity, plain-
-// language rationale, and the rule citation. The same legal source
-// stays anchored across profiles — only tone shifts.
-export function WhyDrawer({ clause, profile, open, onOpenChange }: WhyDrawerProps) {
+// language rationale, and the rule citation.
+export function WhyDrawer({ clause, open, onOpenChange }: WhyDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       {clause && (
@@ -55,7 +53,7 @@ export function WhyDrawer({ clause, profile, open, onOpenChange }: WhyDrawerProp
           )}
           <div className="bg-secondary/40 mt-auto flex items-center gap-2 rounded-md p-2 text-xs">
             <span className="font-semibold">Reading level:</span>
-            <span>{PROFILE_LABEL[profile]}</span>
+            <span>{MIGRANT_WORKER_LABEL}</span>
           </div>
         </SheetContent>
       )}
