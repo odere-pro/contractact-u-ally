@@ -57,11 +57,11 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
         onClick={() => {
           // Fire onSelect only on the closed→open transition so a user
           // collapsing an already-active card does not retrigger
-          // scroll-into-view in the contract pane.
-          setOpen((v) => {
-            if (!v) onSelect?.(clause.id);
-            return !v;
-          });
+          // scroll-into-view in the contract pane. Keep the setOpen
+          // updater pure — side effects belong outside it because
+          // React may invoke updaters more than once.
+          if (!open) onSelect?.(clause.id);
+          setOpen((v) => !v);
         }}
         className="flex w-full items-center gap-3 p-4 text-left"
       >
