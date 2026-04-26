@@ -9,8 +9,10 @@ import { UploadZone } from "@/components/organisms/UploadZone";
 import { StageTracker, type TrackerStage } from "@/components/organisms/StageTracker";
 import { ResultsLayout } from "@/components/organisms/ResultsLayout";
 import { LiveRegion } from "@/components/molecules/LiveRegion";
+import { Badge } from "@/components/ui/badge";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
 import { useEtaSeconds } from "@/hooks/useEtaSeconds";
+import { MIGRANT_WORKER_LABEL } from "@/lib/profileCopy";
 import type { AnalyzeStage, Jurisdiction } from "@/lib/catalog/types";
 
 const JURISDICTION: Jurisdiction = "nl";
@@ -117,6 +119,11 @@ export default function UploadPage() {
               ? `${analysis.summary.totalClauses} clauses, ${analysis.summary.illegalCount} illegal.`
               : `${analysis.clauses.length} streaming.`}
           </h1>
+          <span className="grow" />
+          {/* Static audience indicator — the product currently ships
+              for migrant workers only. Non-interactive: no role, no
+              click handler. */}
+          <Badge aria-label={`Audience: ${MIGRANT_WORKER_LABEL}`}>{MIGRANT_WORKER_LABEL}</Badge>
         </div>
 
         <div className="min-h-0 flex-1" data-testid="analyze-result">

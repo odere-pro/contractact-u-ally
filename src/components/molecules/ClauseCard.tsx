@@ -75,7 +75,7 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
       onKeyDown={handleKeyDown}
       style={{
         transition:
-          "box-shadow var(--duration-fast) var(--ease-out-expo), background-color var(--duration-fast) var(--ease-out-expo)",
+          "box-shadow var(--duration-normal) var(--ease-out-expo), background-color var(--duration-normal) var(--ease-out-expo)",
       }}
       className={cn(
         // Override Card's default `gap-4 py-4` so the tint reaches the
@@ -83,7 +83,11 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
         "relative cursor-pointer gap-0 overflow-hidden py-0 outline-none",
         "border border-l-4 border-[color:var(--color-border)]",
         SEVERITY_LEFT_BAR[severity],
-        SEVERITY_TINT[severity],
+        // Default bg matches the expanded body and the surrounding pane,
+        // so collapsed cards read as a clean stack. Severity color
+        // appears only when the card is active/featured — a single soft
+        // tint reveal with a fade transition.
+        featured ? SEVERITY_TINT[severity] : "bg-card",
         "focus-visible:ring-ring/60 focus-visible:ring-2",
         featured && "shadow-md",
       )}
@@ -117,7 +121,7 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
       {expanded && (
         <CardContent
           id={bodyId}
-          className="bg-card/95 border-border/60 flex flex-col gap-4 border-t px-4 pt-4 pb-4"
+          className="bg-card border-border/60 flex flex-col gap-4 border-t px-4 pt-4 pb-4"
         >
           {clause.originalText && (
             <figure className="bg-muted/40 border-border rounded-md border border-l-2 px-3 py-2.5">
