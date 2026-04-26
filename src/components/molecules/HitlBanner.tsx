@@ -28,7 +28,7 @@ export function HitlBanner({ illegalCount, onConnectLegalAid }: HitlBannerProps)
       <AlertTriangle aria-hidden className="size-4" />
       <strong className="font-mono uppercase">Stop</strong>
       <span className="grow">
-        {illegalCount} critical {findingWord} violate the law. A human review is recommended before
+        {illegalCount} illegal {findingWord} violate the law. A human review is recommended before
         you sign.
       </span>
       {onConnectLegalAid && (

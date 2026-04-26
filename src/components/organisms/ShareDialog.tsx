@@ -51,8 +51,8 @@ export function ShareDialog({ open, onOpenChange, summary, clauses }: ShareDialo
           </Button>
           {illegal > 0 && (
             <p className="bg-critical-soft text-critical border-critical rounded-md border px-3 py-2 text-xs">
-              ⚠ This contract has {illegal} critical {illegal === 1 ? "finding" : "findings"}.
-              Anyone you share the file with will see them.
+              ⚠ This contract has {illegal} illegal {illegal === 1 ? "finding" : "findings"}. Anyone
+              you share the file with will see them.
             </p>
           )}
         </div>
