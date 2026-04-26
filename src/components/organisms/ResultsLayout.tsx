@@ -23,6 +23,13 @@ interface ResultsLayoutProps {
 // 3-pane results surface. Owns transient UI state — active clause,
 // severity filter, drawer + share dialog visibility — but stays
 // stateless about analysis data, which flows in via props.
+//
+// Layout: fills the parent's height (the page wraps it in a flex
+// container that owns viewport height). The grid lays out three
+// independent scroll regions side-by-side; the center column has a
+// generous minmax floor so the contract text never collapses to a
+// word-per-line wrap. Below ~1024px we fall back to a stacked layout
+// so each pane is still individually readable.
 export function ResultsLayout({ ocrText, clauses, summary, profile }: ResultsLayoutProps) {
   const [activeId, setActiveId] = useState<string | null>(clauses[0]?.id ?? null);
   const [filter, setFilter] = useState<SeverityFilter>(ALL_SEVERITIES_SHOWN);
@@ -50,27 +57,35 @@ export function ResultsLayout({ ocrText, clauses, summary, profile }: ResultsLay
   }, []);
 
   return (
-    <div className="flex flex-col gap-0" data-testid="results-layout">
+    <div className="flex h-full min-h-0 flex-col" data-testid="results-layout">
       {showsLegalAidEscalation(profile) && (
         <HitlBanner illegalCount={illegalCount} onConnectLegalAid={() => setShareOpen(true)} />
       )}
 
-      <div className="border-border grid border-y md:grid-cols-[240px_minmax(0,1fr)_360px]">
-        <RiskRail
-          clauses={clauses}
-          activeId={activeId}
-          filter={filter}
-          onSelectClause={handleSelectClause}
-          onToggleSeverity={handleToggleSeverity}
-        />
-        <ContractPreview ocrText={ocrText} clauses={clauses} activeId={activeId} />
-        <SimplifiedPane
-          clauses={clauses}
-          summary={summary}
-          profile={profile}
-          filter={filter}
-          onShowWhy={handleShowWhy}
-        />
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[260px_minmax(520px,1fr)_400px]">
+        <div className="border-border min-h-0 overflow-y-auto border-b lg:border-r lg:border-b-0">
+          <RiskRail
+            clauses={clauses}
+            activeId={activeId}
+            filter={filter}
+            onSelectClause={handleSelectClause}
+            onToggleSeverity={handleToggleSeverity}
+          />
+        </div>
+        <div className="bg-secondary/30 min-h-0 overflow-hidden">
+          <ContractPreview ocrText={ocrText} clauses={clauses} activeId={activeId} />
+        </div>
+        <div className="border-border min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l">
+          <SimplifiedPane
+            clauses={clauses}
+            summary={summary}
+            profile={profile}
+            filter={filter}
+            activeId={activeId}
+            onSelectClause={handleSelectClause}
+            onShowWhy={handleShowWhy}
+          />
+        </div>
       </div>
 
       <ResultsFooter onShare={() => setShareOpen(true)} />

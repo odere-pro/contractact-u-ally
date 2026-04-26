@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 interface ClauseCardProps {
   readonly clause: ClauseEvent;
   readonly featured?: boolean;
+  readonly onSelect?: (id: string) => void;
   readonly onShowWhy?: (clause: ClauseEvent) => void;
 }
 
@@ -25,22 +26,38 @@ function truncate(text: string): string {
 }
 
 // Single clause card in the simplified pane. Featured cards are
-// pre-expanded with prominent visual weight — used for the highest-
-// severity finding. Non-featured cards are collapsible.
-export function ClauseCard({ clause, featured = false, onShowWhy }: ClauseCardProps) {
+// pre-expanded with prominent visual weight — used for the active
+// finding. Non-featured cards are collapsible. Clicking the header
+// also notifies the parent so the contract pane can scroll the
+// matching highlight into view.
+export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: ClauseCardProps) {
   const [open, setOpen] = useState(featured);
+  // React-during-render pattern: when `featured` flips on (e.g. user
+  // clicks a row in the left rail), expand. Tracking `prevFeatured`
+  // means we only set on transition, not on every render. We don't
+  // auto-collapse on `featured = false` so the user can browse
+  // multiple cards without losing context.
+  const [prevFeatured, setPrevFeatured] = useState(featured);
+  if (featured !== prevFeatured) {
+    setPrevFeatured(featured);
+    if (featured) setOpen(true);
+  }
+
   const severity = severityOf(clause);
   return (
     <Card
-      id={`clause-${encodeURIComponent(clause.id)}`}
       data-testid={`clause-card-${clause.id}`}
       data-severity={severity}
-      className={cn(featured && "border-2")}
+      style={{ transition: "border-color var(--duration-fast) var(--ease-out-expo)" }}
+      className={cn(featured && "border-foreground/40 border-2 shadow-sm")}
     >
       <button
         type="button"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+          onSelect?.(clause.id);
+        }}
         className="flex w-full items-center gap-3 p-4 text-left"
       >
         <SeverityBadge severity={severity} compact={!featured} />

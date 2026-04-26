@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 
 import { SectionRef } from "@/components/atoms/SectionRef";
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
@@ -15,37 +15,67 @@ interface ContractPreviewProps {
 }
 
 // Center pane. We don't render the original PDF — pdf.js is a follow-
-// up. Instead we show the OCR text with each clause's `originalText`
-// snippet inline-highlighted. The render is a list of React text
-// nodes; never `dangerouslySetInnerHTML`.
+// up. Instead we present the OCR text on a "page" card with the active
+// clause highlighted inline. `whitespace-pre-wrap` is critical here:
+// without it, the renderer collapsed runs of whitespace and the parent
+// grid forced text to wrap per word.
 export function ContractPreview({ ocrText, clauses, activeId }: ContractPreviewProps) {
   const segments = useMemo(() => splitWithHighlights(ocrText, clauses), [ocrText, clauses]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // When the active clause changes, ensure it's visible. The
+  // ResultsLayout controller also calls scrollIntoView on the global
+  // document, but if the container has overflow we want a smooth
+  // local scroll too.
+  useEffect(() => {
+    if (!activeId || !scrollRef.current) return;
+    const el = scrollRef.current.querySelector<HTMLElement>(
+      `#clause-${CSS.escape(encodeURIComponent(activeId))}`,
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeId]);
 
   return (
     <section
       data-testid="contract-preview"
       aria-label="Contract text with risk highlights"
-      className="bg-secondary/30 max-h-[640px] overflow-y-auto p-6 text-sm leading-relaxed"
+      className="flex h-full min-h-0 flex-col"
     >
-      {segments.map((segment, idx) =>
-        // Stable key: highlights key by clause id (unique by domain
-        // contract); text segments key by their position. Keeps DOM
-        // identity stable while clauses stream in.
-        segment.kind === "text" ? (
-          <span key={`t-${idx}`}>{segment.text}</span>
-        ) : (
-          <Highlight
-            key={`h-${segment.clause.id}`}
-            clause={segment.clause}
-            active={activeId === segment.clause.id}
-          />
-        ),
-      )}
-      {segments.length === 1 && (
-        <p className="text-muted-foreground italic">
-          (No clause snippets found in the OCR text — the analyzer may have rephrased them.)
-        </p>
-      )}
+      <header className="border-border bg-card flex items-center gap-3 border-b px-4 py-2 text-xs">
+        <span className="text-muted-foreground">Contract</span>
+        <span className="grow" />
+        <span className="text-muted-foreground tabular-nums">
+          {clauses.length > 0 ? `${clauses.length} clauses` : "—"}
+        </span>
+      </header>
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-6 lg:px-10 lg:py-8">
+        <article
+          className={cn(
+            "bg-card border-border mx-auto max-w-2xl rounded-lg border p-6 shadow-sm lg:p-10",
+            "text-sm leading-7 whitespace-pre-wrap",
+          )}
+        >
+          {segments.map((segment, idx) =>
+            // Stable key: highlights key by clause id (unique by domain
+            // contract); text segments key by their position. Keeps DOM
+            // identity stable while clauses stream in.
+            segment.kind === "text" ? (
+              <span key={`t-${idx}`}>{segment.text}</span>
+            ) : (
+              <Highlight
+                key={`h-${segment.clause.id}`}
+                clause={segment.clause}
+                active={activeId === segment.clause.id}
+              />
+            ),
+          )}
+          {segments.length === 1 && (
+            <p className="text-muted-foreground mt-4 italic">
+              (No clause snippets matched the OCR text — the analyzer may have rephrased them.)
+            </p>
+          )}
+        </article>
+      </div>
     </section>
   );
 }
@@ -61,8 +91,9 @@ function Highlight({ clause, active }: HighlightProps): ReactNode {
     <mark
       id={`clause-${encodeURIComponent(clause.id)}`}
       data-severity={severity}
+      style={{ transition: "box-shadow var(--duration-normal) var(--ease-out-expo)" }}
       className={cn(
-        "rounded-sm px-1 py-0.5 ring-offset-1 transition-shadow",
+        "rounded-sm px-1 py-0.5 ring-offset-1",
         severity === "critical" && "bg-critical-soft text-critical",
         severity === "medium" && "bg-medium-soft text-medium",
         severity === "low" && "bg-low-soft text-low",
