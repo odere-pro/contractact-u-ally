@@ -34,6 +34,45 @@ export function RiskRail({
 
   return (
     <aside data-testid="risk-rail" aria-label="Findings index" className="flex flex-col gap-5 p-4">
+      {onToggleSeverity && (
+        <section className="flex flex-col gap-1">
+          <h3 className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
+            Filter
+          </h3>
+          {VISIBLE_SEVERITIES.map((sev) => (
+            <label
+              key={sev}
+              htmlFor={`severity-filter-${sev}`}
+              className={cn(
+                "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors select-none",
+                filter[sev]
+                  ? "text-foreground hover:bg-secondary/60"
+                  : "text-muted-foreground/50 hover:bg-secondary/40 hover:text-muted-foreground",
+              )}
+            >
+              <input
+                id={`severity-filter-${sev}`}
+                type="checkbox"
+                checked={filter[sev]}
+                onChange={() => onToggleSeverity(sev)}
+                className="sr-only"
+              />
+              <SeverityIcon severity={sev} className="size-3.5 shrink-0" />
+              <span className="font-medium">{SEVERITY_LABEL[sev]}</span>
+              <span
+                aria-hidden
+                className={cn(
+                  "ml-auto text-xs transition-opacity",
+                  filter[sev] ? "opacity-40" : "opacity-0",
+                )}
+              >
+                ✓
+              </span>
+            </label>
+          ))}
+        </section>
+      )}
+      {onToggleSeverity && <Separator />}
       <section className="flex flex-col gap-1.5">
         <h3 className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
           Jump to
@@ -55,47 +94,6 @@ export function RiskRail({
           </nav>
         )}
       </section>
-      {onToggleSeverity && (
-        <>
-          <Separator />
-          <section className="flex flex-col gap-1">
-            <h3 className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
-              Filter
-            </h3>
-            {VISIBLE_SEVERITIES.map((sev) => (
-              <label
-                key={sev}
-                htmlFor={`severity-filter-${sev}`}
-                className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors select-none",
-                  filter[sev]
-                    ? "text-foreground hover:bg-secondary/60"
-                    : "text-muted-foreground/50 hover:bg-secondary/40 hover:text-muted-foreground",
-                )}
-              >
-                <input
-                  id={`severity-filter-${sev}`}
-                  type="checkbox"
-                  checked={filter[sev]}
-                  onChange={() => onToggleSeverity(sev)}
-                  className="sr-only"
-                />
-                <SeverityIcon severity={sev} className="size-3.5 shrink-0" />
-                <span className="font-medium">{SEVERITY_LABEL[sev]}</span>
-                <span
-                  aria-hidden
-                  className={cn(
-                    "ml-auto text-xs transition-opacity",
-                    filter[sev] ? "opacity-40" : "opacity-0",
-                  )}
-                >
-                  ✓
-                </span>
-              </label>
-            ))}
-          </section>
-        </>
-      )}
     </aside>
   );
 }
