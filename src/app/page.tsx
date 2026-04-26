@@ -13,6 +13,7 @@ import { LiveRegion } from "@/components/molecules/LiveRegion";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
 import { useEtaSeconds } from "@/hooks/useEtaSeconds";
 import { useTranslatedAnalysis } from "@/hooks/useTranslatedAnalysis";
+import { useVoice } from "@/hooks/useVoice";
 import type { AnalyzeStage, Jurisdiction } from "@/lib/catalog/types";
 
 const JURISDICTION: Jurisdiction = "nl";
@@ -30,6 +31,8 @@ export default function UploadPage() {
 
   const alertRef = useRef<HTMLDivElement>(null);
   const findingsTitleRef = useRef<HTMLHeadingElement>(null);
+
+  const voice = useVoice({ jurisdiction: JURISDICTION, clauses: analysis.clauses });
 
   const pickFile = useCallback(
     (next: File): void => {
@@ -93,6 +96,15 @@ export default function UploadPage() {
     }
   }, [analysis.phase]);
 
+  // Build a per-contract Reson8 STT custom model in parallel once analysis
+  // completes so voice questions are biased toward this contract's vocabulary.
+  useEffect(() => {
+    if (analysis.phase === "done" && voice.modelState === "none") {
+      void voice.buildModel();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysis.phase]);
+
   // Results mode: viewport-takeover 3-pane. The upload UI, dropzone,
   // and tracker collapse into a thin toolbar so the analysis owns the
   // screen and the contract column gets enough width to render
@@ -147,6 +159,7 @@ export default function UploadPage() {
             ocrText={translated.ocrText}
             clauses={translated.clauses}
             summary={analysis.summary}
+            voice={voice}
           />
         </div>
       </div>

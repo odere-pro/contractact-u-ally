@@ -1,12 +1,13 @@
 "use client";
 
 import { type KeyboardEvent, type MouseEvent } from "react";
-import { ArrowLeftToLine, ChevronDown } from "lucide-react";
+import { ArrowLeftToLine, ChevronDown, Mic, Square } from "lucide-react";
 
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ClauseEvent } from "@/lib/catalog/types";
+import type { UseVoiceReturn } from "@/hooks/useVoice";
 import { SEVERITY_LABEL, severityOf, type Severity } from "@/lib/severity";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,10 @@ interface ClauseCardProps {
   readonly featured?: boolean;
   readonly onSelect?: (id: string) => void;
   readonly onShowWhy?: (clause: ClauseEvent) => void;
+  readonly voice?: UseVoiceReturn;
 }
+
+const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED === "true";
 
 // Per-severity treatment. The whole card carries a soft tint so collapsed
 // cards read at a glance; a 4px solid bar on the left edge gives the
@@ -47,7 +51,13 @@ const SEVERITY_BADGE: Record<Severity, string> = {
 // "Show in contract" button both call onSelect, so a click anywhere on
 // the row both expands the card and anchors the contract pane to the
 // matching highlight.
-export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: ClauseCardProps) {
+export function ClauseCard({
+  clause,
+  featured = false,
+  onSelect,
+  onShowWhy,
+  voice,
+}: ClauseCardProps) {
   const severity = severityOf(clause);
   const expanded = featured;
   const bodyId = `clause-card-body-${clause.id}`;
@@ -167,23 +177,143 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
               <p className="text-foreground text-[0.9375rem] leading-relaxed">{clause.action}</p>
             </section>
           )}
-          {onShowWhy && (
+          {(onShowWhy || (VOICE_ENABLED && voice)) && (
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="default"
-                variant="outline"
-                data-testid={`clause-card-ask-${clause.id}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onShowWhy(clause);
-                }}
-              >
-                Ask a question
-              </Button>
+              {VOICE_ENABLED && voice ? (
+                <AskQuestionButton clauseId={clause.id} voice={voice} />
+              ) : (
+                onShowWhy && (
+                  <Button
+                    size="default"
+                    variant="outline"
+                    data-testid={`clause-card-ask-${clause.id}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onShowWhy(clause);
+                    }}
+                  >
+                    Ask a question
+                  </Button>
+                )
+              )}
             </div>
+          )}
+          {VOICE_ENABLED && voice && voice.activeClauseId === clause.id && (
+            <VoiceSession voice={voice} />
           )}
         </CardContent>
       )}
     </Card>
   );
+}
+
+function AskQuestionButton({ clauseId, voice }: { clauseId: string; voice: UseVoiceReturn }) {
+  const isActive = voice.activeClauseId === clauseId;
+  const isListening = isActive && voice.voiceState === "listening";
+  const isProcessing = isActive && voice.voiceState === "processing";
+  const isResponse = isActive && voice.voiceState === "response";
+  const isBusyElsewhere =
+    !isActive && (voice.voiceState === "listening" || voice.voiceState === "processing");
+
+  const label = isListening
+    ? "Stop"
+    : isProcessing
+      ? "Processing…"
+      : isResponse
+        ? "Ask again"
+        : isBusyElsewhere
+          ? "Recording…"
+          : "Ask a question";
+
+  const Icon = isListening ? Square : Mic;
+
+  return (
+    <Button
+      size="default"
+      variant={isListening ? "destructive" : "outline"}
+      data-testid={`clause-card-ask-${clauseId}`}
+      disabled={isProcessing || isBusyElsewhere}
+      aria-label={
+        isListening
+          ? "Stop recording your question"
+          : isProcessing
+            ? "Processing your question"
+            : `Ask a voice question about clause ${clauseId}`
+      }
+      onClick={(event) => {
+        event.stopPropagation();
+        if (isListening) {
+          void voice.stopAndProcess();
+        } else {
+          void voice.startListening(clauseId);
+        }
+      }}
+    >
+      <Icon aria-hidden className="size-4" />
+      {label}
+    </Button>
+  );
+}
+
+function VoiceSession({ voice }: { voice: UseVoiceReturn }) {
+  const { voiceState, transcript, answer, modelState, dismiss } = voice;
+
+  if (voiceState === "listening") {
+    return (
+      <p className="text-muted-foreground text-xs italic" role="status">
+        Listening… speak your question, then press Stop.
+      </p>
+    );
+  }
+
+  if (voiceState === "processing") {
+    return (
+      <p className="text-muted-foreground text-xs italic" role="status">
+        Transcribing and reasoning…
+      </p>
+    );
+  }
+
+  if (voiceState === "error") {
+    return (
+      <p className="text-destructive text-xs" role="alert">
+        Sorry — we couldn&apos;t process that. Please try again.
+      </p>
+    );
+  }
+
+  if (voiceState === "response" && answer) {
+    return (
+      <section
+        role="region"
+        aria-label="Voice answer"
+        className="border-border bg-card/60 rounded-md border p-3 text-sm leading-relaxed"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {transcript && (
+          <p className="text-muted-foreground mb-2 text-xs italic">&ldquo;{transcript}&rdquo;</p>
+        )}
+        <p className="text-foreground">{answer}</p>
+        <div className="mt-2 flex items-center justify-between">
+          {modelState === "building" ? (
+            <span className="text-muted-foreground text-xs">Voice model still warming up…</span>
+          ) : (
+            <span />
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(event) => {
+              event.stopPropagation();
+              dismiss();
+            }}
+          >
+            Dismiss
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  return null;
 }

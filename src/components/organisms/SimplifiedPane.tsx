@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DEFAULT_FILTER, applySeverityFilter, type SeverityFilter } from "@/lib/clauseFilters";
 import { sortBySeverity } from "@/lib/severity";
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
+import type { UseVoiceReturn } from "@/hooks/useVoice";
 
 interface SimplifiedPaneProps {
   readonly clauses: readonly ClauseEvent[];
@@ -17,6 +18,7 @@ interface SimplifiedPaneProps {
   readonly selectionNonce?: number;
   readonly onSelectClause?: (id: string) => void;
   readonly onShowWhy?: (clause: ClauseEvent) => void;
+  readonly voice?: UseVoiceReturn;
 }
 
 // Right pane. Cards stay sorted by severity (highest first) and never
@@ -30,6 +32,7 @@ export function SimplifiedPane({
   selectionNonce = 0,
   onSelectClause,
   onShowWhy,
+  voice,
 }: SimplifiedPaneProps) {
   const ordered = sortBySeverity(applySeverityFilter(clauses, filter));
   const allClear =
@@ -75,6 +78,7 @@ export function SimplifiedPane({
           featured={clause.id === activeId}
           onSelect={onSelectClause}
           onShowWhy={onShowWhy}
+          voice={voice}
         />
       ))}
 
