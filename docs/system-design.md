@@ -61,3 +61,24 @@ Inside our system boundary:
 
 Provider keys (`MISTRAL_API_KEY`, `ANTHROPIC_API_KEY`) are read only inside
 the server modules; nothing in this layer ships to the client bundle.
+
+---
+
+## 3. C4 L3 — Pipeline components
+
+![Pipeline components](diagrams/img/c4-component-pipeline.svg)
+
+Zooming into `runRiskPipeline` and the Rule Catalog:
+
+- **`runRiskPipeline`** is the orchestrator. It emits stage progress events,
+  then iterates the Anthropic stream and validates each NDJSON line.
+- **`defaultClaudeStream`** wraps `getAnthropic().messages.stream(...)` and
+  yields text deltas. Tests inject a fake factory.
+- **`streamEvents`** encodes typed events (`stage`, `clause`, `summary`,
+  `error`) as NDJSON `Uint8Array` chunks the route handler can pipe.
+- **`prompts`** builds the system prompt from the loaded rule set and the
+  curated risk examples in `data/risk-examples`.
+- **`classifier`** detects the contract type (e.g. fixed-term vs permanent).
+- **`ruleLoader`** loads the rules for the detected type and jurisdiction.
+- **`schemas`** holds the zod schemas used to validate the request payload
+  and every streamed line — a malformed line is dropped, the stream survives.
