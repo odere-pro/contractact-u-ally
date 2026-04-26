@@ -74,4 +74,16 @@ describe("classifyContract", () => {
     const result = await fresh("Some contract text", "nl");
     expect(result.typeId).toBe("nl-indefinite");
   });
+
+  // Regression: Claude sometimes returned `"se"` despite the prompt, which
+  // bubbled up as an ENOENT crash when the pipeline tried to read a
+  // non-existent `data/se-labor-law.json`. The schema now rejects "se" so
+  // the classifier falls back to NL instead.
+  it('falls back to NL when Claude returns an unsupported "se" jurisdiction', async () => {
+    mockAnthropicReply('{"typeId":"nl-fixed","confidence":0.9,"jurisdiction":"se"}');
+    const { classifyContract: fresh } = await import("./classifier");
+    const result = await fresh("Some contract text");
+    expect(result.jurisdiction).toBe("nl");
+    expect(result.typeId).toBe("nl-indefinite");
+  });
 });

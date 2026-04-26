@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { SUPPORTED_LANGUAGES } from "./types";
 
-export const jurisdictionSchema = z.enum(["nl", "se"]);
+export const jurisdictionSchema = z.enum(["nl"]);
 
 export const supportedLanguageSchema = z.enum(SUPPORTED_LANGUAGES);
 
