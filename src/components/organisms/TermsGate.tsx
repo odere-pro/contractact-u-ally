@@ -53,21 +53,44 @@ export function TermsGate({ children }: TermsGateProps) {
         </div>
       )}
       <Dialog open={open}>
-        <DialogContent
-          title="Terms & Conditions"
-          description="contractact-u-ally analyzes employment contracts to identify risks. Your document is processed in memory only — never persisted to disk or shared with third parties."
-          hideCloseButton
-        >
-          <ul className="text-muted-foreground flex flex-col gap-2 text-sm">
-            <li>
-              The analysis is informational. Consult legal counsel before signing or rejecting any
-              contract.
-            </li>
-            <li>We do not store your contract content. Your browser holds the result in memory.</li>
-            <li>Document text is sent to a third-party LLM for clause analysis.</li>
-          </ul>
+        <DialogContent title="Terms & Conditions" hideCloseButton className="sm:w-[min(560px,92%)]">
+          <div className="border-border -mx-6 max-h-[55vh] overflow-y-auto border-y px-6 py-5">
+            <dl className="flex flex-col gap-5 text-sm">
+              <div className="flex flex-col gap-1.5">
+                <dt className="text-foreground font-semibold">1. Service overview</dt>
+                <dd className="text-muted-foreground leading-relaxed">
+                  contractact-u-ally analyzes employment contracts to flag clauses that may conflict
+                  with applicable labour law and to surface their practical impact.
+                </dd>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <dt className="text-foreground font-semibold">2. Data privacy</dt>
+                <dd className="text-muted-foreground leading-relaxed">
+                  Your document is processed in memory only — never persisted to disk and never
+                  shared with third parties beyond the LLM provider that performs the analysis.
+                </dd>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <dt className="text-foreground font-semibold">3. Limitation of liability</dt>
+                <dd className="text-muted-foreground leading-relaxed">
+                  Results are informational and do not constitute legal advice. Consult qualified
+                  legal counsel before signing or rejecting any contract.
+                </dd>
+              </div>
+            </dl>
+            <p className="text-muted-foreground mt-5 text-xs">
+              Read our{" "}
+              <a
+                href="/privacy"
+                className="text-primary underline underline-offset-2 hover:no-underline"
+              >
+                Privacy Policy
+              </a>
+              .
+            </p>
+          </div>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={handleDecline}>
+            <Button variant="outline" onClick={handleDecline}>
               Decline
             </Button>
             <Button
