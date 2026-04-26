@@ -31,6 +31,13 @@ export function WhyDrawer({ clause, open, onOpenChange }: WhyDrawerProps) {
           <div className="flex items-center gap-2">
             <SeverityBadge severity={severityOf(clause)} />
           </div>
+          {clause.originalText && (
+            <blockquote className="border-border text-muted-foreground border-l-2 pl-3 text-sm italic">
+              {clause.originalText.length > 600
+                ? `${clause.originalText.slice(0, 600)}…`
+                : clause.originalText}
+            </blockquote>
+          )}
           <p className="text-sm">{clause.explanation}</p>
           {clause.action && (
             <p className="text-sm">
