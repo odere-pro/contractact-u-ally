@@ -16,27 +16,35 @@ interface ClauseCardProps {
   readonly onShowWhy?: (clause: ClauseEvent) => void;
 }
 
-// Single clause card in the simplified pane. Collapsed by default; clicking
-// the header expands the body and notifies the parent so the contract pane
-// can scroll the matching highlight into view. All cards share the same
-// border colour — the rotating chevron is the active indicator.
+// Single clause card in the simplified pane. Collapsed by default; the whole
+// card is the click / keyboard target — clicking anywhere expands the body
+// and notifies the parent so the contract pane scrolls the matching
+// highlight into view. The rotating chevron is the active indicator and
+// all cards share the same border colour.
 export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: ClauseCardProps) {
   const severity = severityOf(clause);
   const expanded = featured;
+  const handleSelect = () => onSelect?.(clause.id);
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleSelect();
+    }
+  };
   return (
     <Card
       data-testid={`clause-card-${clause.id}`}
       data-severity={severity}
-      className="border-border overflow-hidden"
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-controls={`clause-body-${clause.id}`}
+      onClick={handleSelect}
+      onKeyDown={handleKeyDown}
+      style={{ transition: "background-color var(--duration-fast) var(--ease-out-expo)" }}
+      className="border-border hover:bg-secondary/40 focus-visible:ring-ring/60 cursor-pointer overflow-hidden outline-none focus-visible:ring-2"
     >
-      <button
-        type="button"
-        onClick={() => onSelect?.(clause.id)}
-        aria-expanded={expanded}
-        aria-controls={`clause-body-${clause.id}`}
-        style={{ transition: "background-color var(--duration-fast) var(--ease-out-expo)" }}
-        className="hover:bg-secondary/40 focus-visible:bg-secondary/40 flex w-full cursor-pointer items-start gap-3 px-4 py-4 text-left outline-none"
-      >
+      <div className="flex items-start gap-3 px-4 py-4">
         <SeverityIcon severity={severity} className="mt-1 size-5 shrink-0" />
         <div className="min-w-0 flex-1">
           <h3 className="text-foreground text-base leading-snug font-semibold tracking-tight">
@@ -51,7 +59,7 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
           style={{ transition: "transform var(--duration-fast) var(--ease-out-expo)" }}
           className={cn("text-muted-foreground mt-1 size-5 shrink-0", expanded && "rotate-180")}
         />
-      </button>
+      </div>
       {expanded && (
         <CardContent id={`clause-body-${clause.id}`} className="flex flex-col gap-5 px-4 pt-0 pb-4">
           {clause.originalText && (
@@ -81,7 +89,14 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
           {(clause.citation || onShowWhy) && (
             <div className="flex flex-wrap items-center gap-2">
               {onShowWhy && (
-                <Button size="default" variant="outline" onClick={() => onShowWhy(clause)}>
+                <Button
+                  size="default"
+                  variant="outline"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onShowWhy(clause);
+                  }}
+                >
                   Why is this a risk?
                 </Button>
               )}
