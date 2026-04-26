@@ -2,7 +2,11 @@
 // server module + the analyze stream consumer imports from here.
 // Pure types, no runtime deps; safe to import from client code.
 
-export type Jurisdiction = "nl" | "se";
+// SE (Swedish) jurisdiction is planned but not yet shipped — no
+// `data/se-labor-law.json` or SE contract-type specs exist. Re-add "se"
+// here in lockstep with the data files, the classifier prompt, and the
+// Zod schema in `./schemas.ts`.
+export type Jurisdiction = "nl";
 
 export const SUPPORTED_LANGUAGES = [
   "en",

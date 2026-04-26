@@ -114,6 +114,19 @@ describe("POST /api/analyze", () => {
     expect(types).toContain("summary");
   });
 
+  // Regression for the same issue as the classifier-level "se" fallback:
+  // any inbound jurisdiction other than "nl" must be rejected at the route
+  // boundary, since loadRuleset would otherwise try to read a non-existent
+  // `data/<jurisdiction>-labor-law.json` and crash with ENOENT.
+  it('rejects body with unsupported jurisdiction "se"', async () => {
+    vi.doMock("@/lib/pipeline/runRiskPipeline", () => ({
+      runRiskPipeline: () => new ReadableStream(),
+    }));
+    const { POST } = await import("./route");
+    const res = await POST(jsonRequest({ ocrText: "x".repeat(300), jurisdiction: "se" }));
+    expect(res.status).toBe(400);
+  });
+
   it("rejects malformed JSON body", async () => {
     vi.doMock("@/lib/pipeline/runRiskPipeline", () => ({
       runRiskPipeline: () => new ReadableStream(),

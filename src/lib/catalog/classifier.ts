@@ -20,15 +20,18 @@ function buildUserMessage(
   )}\n"""`;
 }
 
+// Only Dutch (nl) is shipped today. The schema in `./schemas.ts` rejects
+// any other value, which would otherwise surface as ENOENT when the rule
+// loader tries to read a non-existent `data/<jurisdiction>-labor-law.json`.
 const SYSTEM_PROMPT = `You are a contract type classifier. Match the given contract text to the closest type from the list.
 
 Respond with EXACTLY ONE JSON object and nothing else — no markdown, no explanation, no code fences:
-{"typeId":"<id from the list>","confidence":<0.0–1.0>,"jurisdiction":"<nl or se>"}
+{"typeId":"<id from the list>","confidence":<0.0–1.0>,"jurisdiction":"nl"}
 
 Rules:
 - Pick the single best matching typeId.
 - confidence: 0.0 = random guess, 1.0 = certain match.
-- jurisdiction: "nl" if Dutch, "se" if Swedish. Default "nl" if unclear.
+- jurisdiction: always "nl" (Dutch labour law is the only ruleset currently supported).
 - If none match well, pick the closest and set confidence < 0.5.`;
 
 const FALLBACK = (jurisdiction: Jurisdiction | undefined): ClassifyResult => ({

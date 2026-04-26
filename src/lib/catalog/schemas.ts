@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { SUPPORTED_LANGUAGES } from "./types";
 
-export const jurisdictionSchema = z.enum(["nl", "se"]);
+// Single supported jurisdiction today — `z.literal` produces a clearer error
+// message ("Expected literal nl") than a single-element `z.enum` and matches
+// the narrowed `Jurisdiction` type in `./types.ts`.
+export const jurisdictionSchema = z.literal("nl");
 
 export const supportedLanguageSchema = z.enum(SUPPORTED_LANGUAGES);
 
