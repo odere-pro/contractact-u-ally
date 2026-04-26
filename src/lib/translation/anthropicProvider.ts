@@ -60,6 +60,13 @@ export const anthropicTranslationProvider: TranslationProvider = {
 
     let response;
     try {
+      console.log("[anthropic] translate", {
+        model: TRANSLATE_MODEL,
+        max_tokens: TRANSLATE_MAX_TOKENS,
+        targetLang,
+        itemCount: items.length,
+        userMessageLen: userMessage.length,
+      });
       response = await getAnthropic().messages.create({
         model: TRANSLATE_MODEL,
         max_tokens: TRANSLATE_MAX_TOKENS,

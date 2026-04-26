@@ -50,6 +50,13 @@ export async function classifyContract(
 
   let message;
   try {
+    console.log("[anthropic] classifyContract", {
+      model: CLASSIFY_MODEL,
+      max_tokens: 128,
+      jurisdiction: jurisdiction ?? "(none)",
+      textLen: text.length,
+      typeCount: types.length,
+    });
     message = await getAnthropic().messages.create({
       model: CLASSIFY_MODEL,
       max_tokens: 128,
