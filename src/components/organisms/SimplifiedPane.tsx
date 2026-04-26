@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import { ClauseCard } from "@/components/molecules/ClauseCard";
@@ -15,6 +15,7 @@ interface SimplifiedPaneProps {
   readonly summary: SummaryEvent | null;
   readonly filter?: SeverityFilter;
   readonly activeId?: string | null;
+  readonly selectionNonce?: number;
   readonly onSelectClause?: (id: string) => void;
   readonly onShowWhy?: (clause: ClauseEvent) => void;
 }
@@ -28,6 +29,7 @@ export function SimplifiedPane({
   summary,
   filter = DEFAULT_FILTER,
   activeId = null,
+  selectionNonce = 0,
   onSelectClause,
   onShowWhy,
 }: SimplifiedPaneProps) {
@@ -35,9 +37,20 @@ export function SimplifiedPane({
   const ordered = useMemo(() => pinActive(visible, activeId), [visible, activeId]);
   const allClear =
     summary !== null && summary.illegalCount === 0 && summary.exploitativeCount === 0;
+  const sectionRef = useRef<HTMLElement>(null);
+
+  // pinActive moves the active clause to position 0; scroll the
+  // overflow parent (owned by ResultsLayout) back to top so the user
+  // actually sees the pinned card.
+  useEffect(() => {
+    if (!activeId) return;
+    const scrollParent = sectionRef.current?.parentElement;
+    scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeId, selectionNonce]);
 
   return (
     <section
+      ref={sectionRef}
       data-testid="simplified-pane"
       aria-label="Plain-language explanation"
       className="flex flex-col gap-3 p-4"

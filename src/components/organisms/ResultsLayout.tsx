@@ -36,6 +36,7 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
   // accurate.
   const displayClauses = useMemo(() => clauses.filter((c) => severityOf(c) !== "ok"), [clauses]);
   const [activeId, setActiveId] = useState<string | null>(displayClauses[0]?.id ?? null);
+  const [selectionNonce, setSelectionNonce] = useState(0);
   const [filter, setFilter] = useState<SeverityFilter>(DEFAULT_FILTER);
   const [whyClause, setWhyClause] = useState<ClauseEvent | null>(null);
   const [whyOpen, setWhyOpen] = useState(false);
@@ -44,10 +45,11 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
   const illegalCount = summary?.illegalCount ?? 0;
 
   const handleSelectClause = useCallback((id: string): void => {
-    // Owner of scrolling is ContractPreview's effect — when its
-    // `activeId` prop changes, it scrolls the matching mark into
-    // view. We just update state here.
+    // Bump the nonce on every click so the scroll effects in
+    // ContractPreview / SimplifiedPane re-run even when the user
+    // re-clicks the already-active clause.
     setActiveId(id);
+    setSelectionNonce((n) => n + 1);
   }, []);
 
   const handleToggleSeverity = useCallback((sev: keyof SeverityFilter): void => {
@@ -74,7 +76,12 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
           />
         </div>
         <div className="bg-secondary/30 min-h-0">
-          <ContractPreview ocrText={ocrText} clauses={displayClauses} activeId={activeId} />
+          <ContractPreview
+            ocrText={ocrText}
+            clauses={displayClauses}
+            activeId={activeId}
+            selectionNonce={selectionNonce}
+          />
         </div>
         <div className="border-border min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l">
           <SimplifiedPane
@@ -82,6 +89,7 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
             summary={summary}
             filter={filter}
             activeId={activeId}
+            selectionNonce={selectionNonce}
             onSelectClause={handleSelectClause}
             onShowWhy={handleShowWhy}
           />
