@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getAnthropic } from "@/lib/anthropicClient";
+import { isAnthropicCreditError } from "@/lib/anthropicErrors";
 import { classifyContract } from "@/lib/catalog/classifier";
 import { loadRulesForType } from "@/lib/catalog/ruleLoader";
 import { clauseEventSchema, MAX_CONTRACT_BYTES, summaryEventSchema } from "@/lib/catalog/schemas";
@@ -91,6 +92,13 @@ class ContractTextRangeError extends Error {
   override readonly name = "ContractTextRangeError";
 }
 
+class AnthropicCreditPipelineError extends Error {
+  override readonly name = "AnthropicCreditPipelineError";
+}
+
+const CREDIT_ERROR_MESSAGE =
+  "Anthropic API credit balance is too low. Please top up credits and try again.";
+
 /**
  * Orchestrate ocr → classify → load rules → Claude stream → emit NDJSON.
  *
@@ -164,18 +172,25 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
         const systemPrompt = buildAnalysisSystemPrompt(ruleSet, riskExamples);
 
         let buffer = "";
-        for await (const delta of textFactory({
-          systemPrompt,
-          userMessage: `Analyze this contract:\n\n${ocrText}`,
-        })) {
-          if (!alive) break;
-          buffer += delta;
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-          for (const line of lines) {
-            const out = validateAndEncodeLine(line);
-            if (out) safeEnqueue(out);
+        try {
+          for await (const delta of textFactory({
+            systemPrompt,
+            userMessage: `Analyze this contract:\n\n${ocrText}`,
+          })) {
+            if (!alive) break;
+            buffer += delta;
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+            for (const line of lines) {
+              const out = validateAndEncodeLine(line);
+              if (out) safeEnqueue(out);
+            }
           }
+        } catch (err) {
+          if (isAnthropicCreditError(err)) {
+            throw new AnthropicCreditPipelineError(CREDIT_ERROR_MESSAGE);
+          }
+          throw err;
         }
         if (alive && buffer.trim()) {
           const out = validateAndEncodeLine(buffer);
@@ -223,6 +238,14 @@ function safeDomainMessage(message: string, fallback: string): string {
  * known categories to fixed strings, log the raw error server-side.
  */
 function sanitizeErrorMessage(err: unknown): string {
+  if (err instanceof AnthropicCreditPipelineError) {
+    console.warn("runRiskPipeline: Anthropic credit balance too low");
+    return err.message;
+  }
+  if (isAnthropicCreditError(err)) {
+    console.warn("runRiskPipeline: Anthropic credit balance too low");
+    return CREDIT_ERROR_MESSAGE;
+  }
   if (err instanceof OcrPipelineError) return safeDomainMessage(err.message, "OCR pipeline error");
   if (err instanceof ContractTextRangeError) {
     return safeDomainMessage(err.message, "Contract text out of accepted range");
