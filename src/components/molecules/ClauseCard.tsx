@@ -20,8 +20,6 @@ interface ClauseCardProps {
   readonly voice?: UseVoiceReturn;
 }
 
-const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED === "true";
-
 // Expansion is driven by `featured` — the parent owns which card is
 // active so selecting one collapses the others. The whole card and the
 // "Show in contract" button both call onSelect, so a click anywhere on
@@ -309,19 +307,21 @@ function AskComposeDialog({
             )}
           />
           <div className="flex items-center justify-end gap-2">
-            {VOICE_ENABLED && (
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                aria-label={`Ask a voice question about clause ${clauseId}`}
-                data-testid={`clause-card-ask-mic-${clauseId}`}
-                onClick={toggleMic}
-                className="size-9 shrink-0"
-              >
-                <Mic aria-hidden className="size-4" />
-              </Button>
-            )}
+            <Button
+              type="button"
+              size="icon"
+              variant={isListening ? "default" : "outline"}
+              aria-label={
+                isListening
+                  ? `Stop recording question about clause ${clauseId}`
+                  : `Ask a voice question about clause ${clauseId}`
+              }
+              data-testid={`clause-card-ask-mic-${clauseId}`}
+              onClick={toggleMic}
+              className="size-9 shrink-0"
+            >
+              <Mic aria-hidden className="size-4" />
+            </Button>
             <Button
               type="submit"
               variant="default"
