@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type KeyboardEvent, type MouseEvent } from "react";
-import { ArrowLeftToLine, ChevronDown, Mic, Send, Square } from "lucide-react";
+import { ArrowLeftToLine, ChevronDown, Mic, Send } from "lucide-react";
 
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import { Button } from "@/components/ui/button";
@@ -161,7 +161,7 @@ export function ClauseCard({
             // keeps content readable when scrolled behind it.
             <div className="border-border/60 bg-card/85 sticky bottom-0 -mx-4 -mb-4 flex flex-col gap-2 border-t px-4 pt-3 pb-4 backdrop-blur-sm">
               {voice ? (
-                <AskRow clauseId={clause.id} voice={voice} />
+                <AskButton clauseId={clause.id} clauseTitle={clause.title} voice={voice} />
               ) : (
                 onShowWhy && (
                   <Button
@@ -177,7 +177,6 @@ export function ClauseCard({
                   </Button>
                 )
               )}
-              {voice && voice.activeClauseId === clause.id && <SessionStatus voice={voice} />}
             </div>
           )}
           {voice && voice.activeClauseId === clause.id && (
@@ -189,29 +188,81 @@ export function ClauseCard({
   );
 }
 
-// Compact composite control: text input + send + (optional) mic.
-// Submission and recording both flow through the same `voice` hook.
-function AskRow({ clauseId, voice }: { clauseId: string; voice: UseVoiceReturn }) {
+// Single entry-point button. Clicking opens a compose dialog where the
+// user types (or speaks) the question. The button is the entry — the
+// input lives inside the popup, not in the card body.
+function AskButton({
+  clauseId,
+  clauseTitle,
+  voice,
+}: {
+  clauseId: string;
+  clauseTitle: string;
+  voice: UseVoiceReturn;
+}) {
+  const [composeOpen, setComposeOpen] = useState(false);
+  const isActive = voice.activeClauseId === clauseId;
+  const isBusy =
+    voice.voiceState === "listening" ||
+    voice.voiceState === "processing" ||
+    voice.voiceState === "streaming";
+  const isBusyHere = isActive && isBusy;
+  const isBusyElsewhere = !isActive && isBusy;
+
+  const open = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (isBusyElsewhere) return;
+    setComposeOpen(true);
+  };
+
+  return (
+    <>
+      <Button
+        size="default"
+        variant="outline"
+        disabled={isBusyHere || isBusyElsewhere}
+        data-testid={`clause-card-ask-${clauseId}`}
+        onClick={open}
+      >
+        Ask a question
+      </Button>
+      <AskComposeDialog
+        clauseId={clauseId}
+        clauseTitle={clauseTitle}
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        voice={voice}
+      />
+    </>
+  );
+}
+
+// Compose dialog: titled by clause, input + send + optional mic inside.
+// On submit it closes and the streaming QASession dialog takes over.
+function AskComposeDialog({
+  clauseId,
+  clauseTitle,
+  open,
+  onOpenChange,
+  voice,
+}: {
+  clauseId: string;
+  clauseTitle: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  voice: UseVoiceReturn;
+}) {
   const [draft, setDraft] = useState("");
   const isActive = voice.activeClauseId === clauseId;
   const isListening = isActive && voice.voiceState === "listening";
-  const isProcessing =
-    isActive && (voice.voiceState === "processing" || voice.voiceState === "streaming");
-  const isBusyElsewhere =
-    !isActive &&
-    (voice.voiceState === "listening" ||
-      voice.voiceState === "processing" ||
-      voice.voiceState === "streaming");
-
-  const inputDisabled = isListening || isProcessing || isBusyElsewhere;
-  const submitDisabled = inputDisabled || draft.trim().length === 0;
 
   const submit = (event: FormEvent | MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
     const text = draft.trim();
-    if (!text || inputDisabled) return;
+    if (!text) return;
     setDraft("");
+    onOpenChange(false);
     void voice.askWithText(clauseId, text);
   };
 
@@ -219,106 +270,74 @@ function AskRow({ clauseId, voice }: { clauseId: string; voice: UseVoiceReturn }
     event.stopPropagation();
     if (isListening) {
       void voice.stopAndProcess();
+      onOpenChange(false);
     } else {
       void voice.startListening(clauseId);
+      onOpenChange(false);
     }
   };
 
+  if (!open) return null;
+
   return (
-    <form
-      onSubmit={submit}
-      onClick={(event) => event.stopPropagation()}
-      className="flex w-full items-center gap-2"
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) onOpenChange(false);
+      }}
     >
-      <input
-        type="text"
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onKeyDown={(event) => {
-          // Card-level keydown toggles expansion on Enter — stop the bubble.
-          event.stopPropagation();
-        }}
+      <DialogContent
+        title={`Ask about: ${clauseTitle}`}
+        description="Type your question or use the mic."
         onClick={(event) => event.stopPropagation()}
-        disabled={inputDisabled}
-        placeholder={
-          isListening
-            ? "Listening…"
-            : isProcessing
-              ? "Working on your answer…"
-              : "Ask a question about this clause"
-        }
-        aria-label={`Ask a question about clause ${clauseId}`}
-        data-testid={`clause-card-ask-input-${clauseId}`}
-        maxLength={1000}
-        className={cn(
-          "border-border bg-background text-foreground placeholder:text-muted-foreground/70",
-          "h-9 min-w-0 flex-1 rounded-md border px-3 text-sm",
-          "focus-visible:ring-ring/60 focus-visible:border-transparent focus-visible:ring-2 focus-visible:outline-none",
-          "disabled:opacity-60",
-        )}
-      />
-      <Button
-        type="submit"
-        size="icon"
-        variant="default"
-        disabled={submitDisabled}
-        aria-label="Send question"
-        data-testid={`clause-card-ask-send-${clauseId}`}
-        onClick={submit}
-        className="size-9 shrink-0"
       >
-        <Send aria-hidden className="size-4" />
-      </Button>
-      {VOICE_ENABLED && (
-        <Button
-          type="button"
-          size="icon"
-          variant={isListening ? "destructive" : "outline"}
-          disabled={isProcessing || isBusyElsewhere}
-          aria-label={
-            isListening
-              ? "Stop recording your question"
-              : `Ask a voice question about clause ${clauseId}`
-          }
-          data-testid={`clause-card-ask-mic-${clauseId}`}
-          onClick={toggleMic}
-          className="size-9 shrink-0"
-        >
-          {isListening ? (
-            <Square aria-hidden className="size-4" />
-          ) : (
-            <Mic aria-hidden className="size-4" />
-          )}
-        </Button>
-      )}
-    </form>
+        <form onSubmit={submit} className="flex flex-col gap-3">
+          <input
+            type="text"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onClick={(event) => event.stopPropagation()}
+            autoFocus
+            placeholder="Ask a question about this clause"
+            aria-label={`Ask a question about clause ${clauseId}`}
+            data-testid={`clause-card-ask-input-${clauseId}`}
+            maxLength={1000}
+            className={cn(
+              "border-border bg-background text-foreground placeholder:text-muted-foreground/70",
+              "h-10 w-full rounded-md border px-3 text-sm",
+              "focus-visible:ring-ring/60 focus-visible:border-transparent focus-visible:ring-2 focus-visible:outline-none",
+            )}
+          />
+          <div className="flex items-center justify-end gap-2">
+            {VOICE_ENABLED && (
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                aria-label={`Ask a voice question about clause ${clauseId}`}
+                data-testid={`clause-card-ask-mic-${clauseId}`}
+                onClick={toggleMic}
+                className="size-9 shrink-0"
+              >
+                <Mic aria-hidden className="size-4" />
+              </Button>
+            )}
+            <Button
+              type="submit"
+              variant="default"
+              disabled={draft.trim().length === 0}
+              data-testid={`clause-card-ask-send-${clauseId}`}
+              onClick={submit}
+              className="gap-1.5"
+            >
+              <Send aria-hidden className="size-4" />
+              Send
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
-}
-
-// Inline status row that lives just below the input. Only surfaces the
-// transient states the dialog can't (listening + error) — `processing`
-// and `streaming` are visualised inside the QASession dialog instead, so
-// we don't duplicate the same message in two places.
-function SessionStatus({ voice }: { voice: UseVoiceReturn }) {
-  const { voiceState } = voice;
-
-  if (voiceState === "listening") {
-    return (
-      <p className="text-muted-foreground text-xs italic" role="status">
-        Listening… speak your question, then press Stop.
-      </p>
-    );
-  }
-
-  if (voiceState === "error") {
-    return (
-      <p className="text-destructive text-xs" role="alert">
-        Sorry — we couldn&apos;t process that. Please try again.
-      </p>
-    );
-  }
-
-  return null;
 }
 
 // Modal popup that holds the full Q&A pair. Question appears immediately
