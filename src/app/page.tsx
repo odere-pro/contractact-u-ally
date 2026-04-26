@@ -9,11 +9,9 @@ import { UploadZone } from "@/components/organisms/UploadZone";
 import { StageTracker, type TrackerStage } from "@/components/organisms/StageTracker";
 import { ResultsLayout } from "@/components/organisms/ResultsLayout";
 import { ErrorBoundary } from "@/components/organisms/ErrorBoundary";
-import { LanguageSwitcher } from "@/components/molecules/LanguageSwitcher";
 import { LiveRegion } from "@/components/molecules/LiveRegion";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
 import { useEtaSeconds } from "@/hooks/useEtaSeconds";
-import { useTranslatedAnalysis } from "@/hooks/useTranslatedAnalysis";
 import { useVoice } from "@/hooks/useVoice";
 import type { AnalyzeStage, Jurisdiction } from "@/lib/catalog/types";
 
@@ -71,15 +69,6 @@ export default function UploadPage() {
   });
 
   const liveMessage = computeLiveMessage(analysis, showError);
-
-  // Translation overlay. The hook returns the original ocrText/clauses
-  // when language === "en" (or while a translation is in flight), so the
-  // results UI never sees a partially-translated state.
-  const translated = useTranslatedAnalysis({
-    ocrText: analysis.ocrText,
-    clauses: analysis.clauses,
-    ready: analysis.phase === "done",
-  });
 
   // On error → focus the Alert (which already has role="alert" so it
   // also self-announces). On done → focus the Findings card title so
@@ -142,18 +131,7 @@ export default function UploadPage() {
               : `${analysis.clauses.length} streaming.`}
           </h1>
           <span className="grow" />
-          <LanguageSwitcher
-            current={translated.language}
-            pending={translated.pending}
-            onChange={translated.setLanguage}
-          />
         </div>
-
-        {translated.error && (
-          <Alert variant="destructive" data-testid="translate-error" className="mx-4 mt-2">
-            <AlertDescription>{translated.error}</AlertDescription>
-          </Alert>
-        )}
 
         <div className="min-h-0 flex-1" data-testid="analyze-result">
           <ErrorBoundary
@@ -176,8 +154,8 @@ export default function UploadPage() {
             )}
           >
             <ResultsLayout
-              ocrText={translated.ocrText}
-              clauses={translated.clauses}
+              ocrText={analysis.ocrText}
+              clauses={analysis.clauses}
               summary={analysis.summary}
               voice={voice}
             />
