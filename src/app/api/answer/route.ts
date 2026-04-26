@@ -77,6 +77,14 @@ export async function POST(req: NextRequest): Promise<Response> {
   const sse = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
+        console.log("[anthropic] answer.stream", {
+          model: "claude-sonnet-4-6",
+          max_tokens: 512,
+          jurisdiction,
+          questionLen: question.length,
+          clauseCount: clauses.length,
+          promptLen: prompt.length,
+        });
         const stream = client.messages.stream({
           model: "claude-sonnet-4-6",
           max_tokens: 512,
