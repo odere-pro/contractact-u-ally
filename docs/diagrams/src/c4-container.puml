@@ -10,8 +10,7 @@ Person(worker, "Worker")
 
 System_Boundary(app, "contractact-u-ally") {
   Container(ui, "Web UI", "Next.js / React")
-  Container(ocr, "/api/ocr", "Route handler")
-  Container(analyze, "/api/analyze", "Route handler")
+  Container(api, "/api/analyze", "Route handler")
   Container(pipeline, "runRiskPipeline", "Pipeline module")
   Container(catalog, "Rule Catalog", "Rules + zod schemas")
 }
@@ -20,11 +19,9 @@ System_Ext(mistral, "Mistral OCR")
 System_Ext(anthropic, "Anthropic Claude")
 
 Rel(worker, ui, "HTTPS")
-Rel(ui, ocr, "PDF upload")
-Rel(ui, analyze, "Analyze · NDJSON stream")
-
-Rel(ocr, mistral, "PDF bytes")
-Rel(analyze, pipeline, "run")
+Rel(ui, api, "POST PDF · NDJSON stream back")
+Rel(api, pipeline, "run")
+Rel(pipeline, mistral, "OCR")
 Rel(pipeline, catalog, "classify · load rules")
 Rel(pipeline, anthropic, "messages.stream")
 @enduml
