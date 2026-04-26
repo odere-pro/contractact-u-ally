@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type KeyboardEvent, type MouseEvent } from "react";
-import { ArrowLeftToLine, ChevronDown, Mic, Send } from "lucide-react";
+import { ArrowLeftToLine, ChevronDown, Mic, Send, Square } from "lucide-react";
 
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import { Button } from "@/components/ui/button";
@@ -267,26 +267,38 @@ function AskComposeDialog({
   const toggleMic = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (isListening) {
+      // Close the compose dialog so QASession can take over with the
+      // streaming question + answer.
+      onOpenChange(false);
       void voice.stopAndProcess();
-      onOpenChange(false);
     } else {
+      // Keep the compose dialog open while recording so the user has a
+      // visible "Stop" target. Closing it would orphan the recording
+      // with no UI affordance to end it.
       void voice.startListening(clauseId);
-      onOpenChange(false);
     }
   };
 
-  if (!open) return null;
+  // Stay open while recording even if the parent thinks we should close —
+  // otherwise the user has no way to stop the mic.
+  if (!open && !isListening) return null;
 
   return (
     <Dialog
       open
       onOpenChange={(next) => {
+        // Block dialog dismissal while the mic is live — otherwise the
+        // recording would continue with no UI to stop it. The user must
+        // hit Stop (or cancel via voice.cancel) to leave listening mode.
+        if (!next && isListening) return;
         if (!next) onOpenChange(false);
       }}
     >
       <DialogContent
         title={`Ask about: ${clauseTitle}`}
-        description="Type your question or use the mic."
+        description={
+          isListening ? "Recording — tap stop when done." : "Type your question or use the mic."
+        }
         onClick={(event) => event.stopPropagation()}
       >
         <form onSubmit={submit} className="flex flex-col gap-3">
@@ -296,40 +308,56 @@ function AskComposeDialog({
             onChange={(event) => setDraft(event.target.value)}
             onClick={(event) => event.stopPropagation()}
             autoFocus
-            placeholder="Ask a question about this clause"
+            disabled={isListening}
+            placeholder={isListening ? "Listening…" : "Ask a question about this clause"}
             aria-label={`Ask a question about clause ${clauseId}`}
             data-testid={`clause-card-ask-input-${clauseId}`}
             maxLength={1000}
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            name={`ask-${clauseId}`}
             className={cn(
               "border-border bg-background text-foreground placeholder:text-muted-foreground/70",
               "h-10 w-full rounded-md border px-3 text-sm",
               "focus-visible:ring-ring/60 focus-visible:border-transparent focus-visible:ring-2 focus-visible:outline-none",
+              isListening && "opacity-60",
             )}
           />
+          {isListening && (
+            <div
+              className="text-muted-foreground flex items-center gap-2 text-sm"
+              role="status"
+              aria-live="polite"
+            >
+              <span
+                aria-hidden
+                className="inline-block size-2 rounded-full bg-red-500"
+                style={{ animation: "pulse 1s ease-in-out infinite" }}
+              />
+              Recording…
+            </div>
+          )}
           <div className="flex items-center justify-end gap-2">
             <Button
               type="button"
               size="icon"
-              variant={isListening ? "default" : "outline"}
+              variant={isListening ? "destructive" : "outline"}
               aria-label={
                 isListening
-                  ? `Stop recording question about clause ${clauseId}`
+                  ? `Stop recording for clause ${clauseId}`
                   : `Ask a voice question about clause ${clauseId}`
               }
               data-testid={`clause-card-ask-mic-${clauseId}`}
               onClick={toggleMic}
               className="size-9 shrink-0"
             >
-              <Mic aria-hidden className="size-4" />
+              {isListening ? (
+                <Square aria-hidden className="size-4" />
+              ) : (
+                <Mic aria-hidden className="size-4" />
+              )}
             </Button>
             <Button
               type="submit"
               variant="default"
-              disabled={draft.trim().length === 0}
+              disabled={isListening || draft.trim().length === 0}
               data-testid={`clause-card-ask-send-${clauseId}`}
               onClick={submit}
               className="gap-1.5"

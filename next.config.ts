@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// Permissions-Policy: deny camera/geolocation, allow microphone for
-// same-origin (voice Q&A on clause cards needs getUserMedia).
+// Permissions-Policy: deny camera + geolocation; allow microphone on the
+// same origin so the in-app voice Q&A flow can call getUserMedia.
 const permissionsPolicy = ["camera=()", "microphone=(self)", "geolocation=()"].join(", ");
 
 // CSP — restrictive baseline. 'unsafe-eval' is only allowed in dev
