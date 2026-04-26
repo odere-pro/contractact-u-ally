@@ -63,4 +63,4 @@ if (offenders.length > 0) {
   console.error("\nUse var(--color-*) / var(--font-*) tokens instead.");
   process.exit(1);
 }
-console.log("✓ Token discipline OK");
+console.info("✓ Token discipline OK");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { ResultsLayout } from "@/components/organisms/ResultsLayout";
 import { LiveRegion } from "@/components/molecules/LiveRegion";
 import { Badge } from "@/components/ui/badge";
 import { useAnalysisStream } from "@/hooks/useAnalysisStream";
+import { useEtaSeconds } from "@/hooks/useEtaSeconds";
 import { MIGRANT_WORKER_LABEL } from "@/lib/profileCopy";
 import type { AnalyzeStage, Jurisdiction } from "@/lib/catalog/types";
 
@@ -30,21 +31,24 @@ export default function UploadPage() {
   const alertRef = useRef<HTMLDivElement>(null);
   const findingsTitleRef = useRef<HTMLHeadingElement>(null);
 
-  function pickFile(next: File): void {
-    setFile(next);
-    reset();
-  }
+  const pickFile = useCallback(
+    (next: File): void => {
+      setFile(next);
+      reset();
+    },
+    [reset],
+  );
 
-  async function submit(): Promise<void> {
+  const submit = useCallback(async (): Promise<void> => {
     if (!file) return;
     reset();
     await run({ file, jurisdiction: JURISDICTION });
-  }
+  }, [file, run, reset]);
 
-  function startOver(): void {
+  const startOver = useCallback((): void => {
     reset();
     setFile(null);
-  }
+  }, [reset]);
 
   const trackerStage: TrackerStage = computeTrackerStage(analysis.phase, analysis.stage);
   const trackerProgress = analysis.stageProgress;
@@ -222,44 +226,4 @@ function countWords(text: string): number | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
   return trimmed.split(/\s+/).length;
-}
-
-const STAGE_ORDER: readonly AnalyzeStage[] = ["ocr", "classify", "load_rules", "analyze"] as const;
-const TOTAL_STAGES = STAGE_ORDER.length;
-const ETA_TICK_MS = 1000;
-const MIN_ELAPSED_MS_FOR_ETA = 750;
-
-interface EtaInputs {
-  readonly startedAt: number | null;
-  readonly isWorking: boolean;
-  readonly stage: AnalyzeStage | null;
-  readonly stageProgress: number;
-}
-
-// Re-renders once per second while running so the displayed ETA decays
-// smoothly even between server stage events. The interval callback is the
-// "external system" the effect synchronizes with — Date.now() is read
-// inside that callback (allowed) and stored in state. Returns null until
-// enough elapsed time has passed to make an extrapolation worthwhile.
-function useEtaSeconds({ startedAt, isWorking, stage, stageProgress }: EtaInputs): number | null {
-  const [now, setNow] = useState<number>(() => Date.now());
-
-  useEffect(() => {
-    if (!isWorking) return;
-    const handle = window.setInterval(() => setNow(Date.now()), ETA_TICK_MS);
-    return () => window.clearInterval(handle);
-  }, [isWorking]);
-
-  if (!isWorking || startedAt === null) return null;
-  const elapsedMs = Math.max(0, now - startedAt);
-  if (elapsedMs < MIN_ELAPSED_MS_FOR_ETA) return null;
-
-  const stageIdx = stage ? STAGE_ORDER.indexOf(stage) : 0;
-  const safeProgress = Math.max(0, Math.min(1, stageProgress));
-  const overall = (stageIdx + safeProgress) / TOTAL_STAGES;
-  if (overall <= 0 || overall >= 1) return null;
-
-  const totalMs = elapsedMs / overall;
-  const remainingMs = Math.max(0, totalMs - elapsedMs);
-  return Math.round(remainingMs / 1000);
 }

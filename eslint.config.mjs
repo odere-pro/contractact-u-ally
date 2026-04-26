@@ -8,7 +8,7 @@ const eslintConfig = defineConfig([
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
-      "no-console": ["warn", { allow: ["error", "warn"] }],
+      "no-console": ["warn", { allow: ["error", "warn", "info"] }],
     },
   },
   // Override default ignores of eslint-config-next.

@@ -14,7 +14,7 @@ interface UploadZoneProps {
 const FAILURE_MESSAGES: Record<UploadValidationFailure, string> = {
   empty: "File appears to be empty.",
   too_large: `File exceeds ${MAX_UPLOAD_BYTES / 1024 / 1024}MB.`,
-  mime_not_allowed: "Only PDF, JPEG, and PNG are accepted.",
+  mime_not_allowed: "Only PDF is accepted.",
   magic_mismatch: "File contents don't match its extension.",
 };
 
@@ -68,7 +68,7 @@ export function UploadZone({ onFile, disabled }: UploadZoneProps) {
         className="border-border flex min-h-48 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition-colors data-[dragging=true]:border-[var(--color-accent)] data-[dragging=true]:bg-[var(--color-accent)]/10"
       >
         <p className="text-base font-medium">Drop your contract here</p>
-        <p className="text-muted-foreground text-sm">PDF · JPEG · PNG · TXT — up to 10MB</p>
+        <p className="text-muted-foreground text-sm">PDF — up to 10MB</p>
         {filename && (
           <p
             data-testid="upload-filename"
@@ -83,7 +83,7 @@ export function UploadZone({ onFile, disabled }: UploadZoneProps) {
           ref={inputRef}
           type="file"
           aria-label="Upload contract file"
-          accept="application/pdf,image/jpeg,image/png,text/plain"
+          accept="application/pdf"
           className="hidden"
           disabled={disabled}
           onChange={(e) => {
