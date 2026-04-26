@@ -108,12 +108,12 @@ function Highlight({ clause, active }: HighlightProps): ReactNode {
         ...(active ? { animation: "anchor-pulse 900ms var(--ease-out-expo)" } : {}),
       }}
       className={cn(
-        "rounded-sm px-1 py-0.5 ring-offset-2",
+        "rounded-sm px-1 py-0.5",
         severity === "critical" && "bg-critical-soft text-critical",
         severity === "medium" && "bg-medium-soft text-medium",
         severity === "low" && "bg-low-soft text-low",
         severity === "ok" && "bg-ok-soft text-ok",
-        active && "ring-foreground scroll-mt-12 ring-2 ring-offset-2",
+        active && "scroll-mt-12",
       )}
     >
       <SeverityIcon severity={severity} className="mr-1 inline size-3 align-text-bottom" />
