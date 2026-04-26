@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import { ClauseCard } from "@/components/molecules/ClauseCard";
@@ -7,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   ALL_SEVERITIES_SHOWN,
   applySeverityFilter,
-  highestSeverity,
   type SeverityFilter,
 } from "@/lib/clauseFilters";
 import { PROFILE_LABEL, PROFILE_TAGLINE, type Profile } from "@/lib/profileCopy";
@@ -19,21 +19,26 @@ interface SimplifiedPaneProps {
   readonly summary: SummaryEvent | null;
   readonly profile: Profile;
   readonly filter?: SeverityFilter;
+  readonly activeId?: string | null;
+  readonly onSelectClause?: (id: string) => void;
   readonly onShowWhy?: (clause: ClauseEvent) => void;
 }
 
-// Right pane. Featured slot pinned to the highest-severity clause;
-// rest render as collapsible cards. When the analysis returns nothing
-// concerning we render the "all clear" panel instead.
+// Right pane. The active clause is pinned at the top and rendered
+// expanded; the rest follow in severity order as collapsible cards.
+// When the analysis returns nothing concerning we render the "all
+// clear" panel instead.
 export function SimplifiedPane({
   clauses,
   summary,
   profile,
   filter = ALL_SEVERITIES_SHOWN,
+  activeId = null,
+  onSelectClause,
   onShowWhy,
 }: SimplifiedPaneProps) {
   const visible = sortBySeverity(applySeverityFilter(clauses, filter));
-  const top = highestSeverity(clauses);
+  const ordered = useMemo(() => pinActive(visible, activeId), [visible, activeId]);
   const allClear =
     summary !== null && summary.illegalCount === 0 && summary.exploitativeCount === 0;
 
@@ -63,20 +68,34 @@ export function SimplifiedPane({
         </Card>
       )}
 
-      {visible.map((clause, idx) => (
+      {ordered.map((clause) => (
         <ClauseCard
           key={clause.id}
           clause={clause}
-          featured={idx === 0 && top !== null && (top === "critical" || top === "medium")}
+          featured={clause.id === activeId}
+          onSelect={onSelectClause}
           onShowWhy={onShowWhy}
         />
       ))}
 
-      {visible.length === 0 && !allClear && (
+      {ordered.length === 0 && !allClear && (
         <p className="text-muted-foreground text-sm">
           No clauses match the current filter. Toggle severities in the rail.
         </p>
       )}
     </section>
   );
+}
+
+// Move the active clause to position 0 if it's in the visible set.
+// Keeps the rest of the order intact so the user's mental map of
+// "critical first, then medium, …" is preserved underneath.
+export function pinActive(
+  clauses: readonly ClauseEvent[],
+  activeId: string | null,
+): readonly ClauseEvent[] {
+  if (!activeId) return clauses;
+  const idx = clauses.findIndex((c) => c.id === activeId);
+  if (idx <= 0) return clauses;
+  return [clauses[idx], ...clauses.slice(0, idx), ...clauses.slice(idx + 1)];
 }

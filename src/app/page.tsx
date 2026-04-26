@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,7 +28,7 @@ export default function UploadPage() {
   const { profile, setProfile } = useProfile();
 
   const alertRef = useRef<HTMLDivElement>(null);
-  const findingsTitleRef = useRef<HTMLDivElement>(null);
+  const findingsTitleRef = useRef<HTMLHeadingElement>(null);
 
   function pickFile(next: File): void {
     setFile(next);
@@ -38,6 +39,11 @@ export default function UploadPage() {
     if (!file) return;
     reset();
     await run({ file, jurisdiction: "nl" });
+  }
+
+  function startOver(): void {
+    reset();
+    setFile(null);
   }
 
   const trackerStage: TrackerStage = computeTrackerStage(analysis.phase, analysis.stage);
@@ -65,6 +71,67 @@ export default function UploadPage() {
       findingsTitleRef.current.focus();
     }
   }, [analysis.phase]);
+
+  // Results mode: viewport-takeover 3-pane. The upload UI, dropzone,
+  // and tracker collapse into a thin toolbar so the analysis owns the
+  // screen and the contract column gets enough width to render
+  // readable line breaks (the prior layout clamped to max-w-3xl which
+  // chopped OCR text into one word per line).
+  if (showFindings) {
+    return (
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        data-testid="results-mode"
+        style={{ animation: "fade-in var(--duration-normal) var(--ease-out-expo)" }}
+      >
+        <LiveRegion message={liveMessage} />
+
+        <div className="border-border flex flex-wrap items-center gap-3 border-b px-4 py-2">
+          <Button
+            data-testid="start-over"
+            size="sm"
+            variant="ghost"
+            onClick={startOver}
+            className="-ml-2"
+          >
+            <ArrowLeft aria-hidden className="size-4" />
+            New contract
+          </Button>
+          {/* h1 is the page heading in results mode (the upload-mode h1
+              "Know what you signed." is gone). tabIndex=-1 lets the
+              `done` effect move focus here without making it tab-
+              reachable, so AT users land on the new content. */}
+          <h1
+            ref={findingsTitleRef}
+            tabIndex={-1}
+            className="flex flex-wrap items-center gap-2 text-base font-semibold outline-none"
+          >
+            Findings
+            <span className="text-muted-foreground text-sm font-normal" aria-live="polite">
+              {analysis.summary
+                ? `${analysis.summary.totalClauses} clauses · ${analysis.summary.illegalCount} illegal`
+                : `${analysis.clauses.length} streaming…`}
+            </span>
+          </h1>
+          <span className="grow" />
+          <div role="radiogroup" aria-label="Reading lens" className="flex flex-wrap gap-1.5">
+            {PROFILES.map((p) => (
+              <ProfilePill key={p} profile={p} active={p === profile} onSelect={setProfile} />
+            ))}
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1" data-testid="analyze-result">
+          <ResultsLayout
+            ocrText={analysis.ocrText}
+            clauses={analysis.clauses}
+            summary={analysis.summary}
+            profile={profile}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-12">
@@ -107,35 +174,6 @@ export default function UploadPage() {
         <Alert ref={alertRef} tabIndex={-1} variant="destructive" data-testid="analyze-error">
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
-      )}
-
-      {showFindings && (
-        <div className="flex flex-col gap-4" data-testid="analyze-result">
-          <div
-            ref={findingsTitleRef}
-            tabIndex={-1}
-            className="flex flex-wrap items-center gap-2 outline-none"
-          >
-            <h2 className="text-lg font-semibold">Findings</h2>
-            <span className="text-muted-foreground text-sm" aria-live="polite">
-              {analysis.summary
-                ? `${analysis.summary.totalClauses} clauses · ${analysis.summary.illegalCount} illegal`
-                : `${analysis.clauses.length} streaming…`}
-            </span>
-            <span className="grow" />
-            <div role="radiogroup" aria-label="Reading lens" className="flex flex-wrap gap-1.5">
-              {PROFILES.map((p) => (
-                <ProfilePill key={p} profile={p} active={p === profile} onSelect={setProfile} />
-              ))}
-            </div>
-          </div>
-          <ResultsLayout
-            ocrText={analysis.ocrText}
-            clauses={analysis.clauses}
-            summary={analysis.summary}
-            profile={profile}
-          />
-        </div>
       )}
     </section>
   );
