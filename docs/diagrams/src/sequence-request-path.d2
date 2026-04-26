@@ -1,0 +1,59 @@
+# contractact-u-ally — Request path (D2 sequence)
+# Render: d2 docs/diagrams/src/sequence-request-path.d2 docs/diagrams/img/sequence-request-path.svg
+
+shape: sequence_diagram
+
+worker: Worker (browser) {shape: person}
+ui: page.tsx + UploadZone
+hook: useAnalysisStream
+edge: Vercel Edge
+ocr: /api/ocr
+analyze: /api/analyze
+pipe: runRiskPipeline
+catalog: classifier + ruleLoader
+mistral: Mistral OCR
+claude: Anthropic Claude
+
+worker -> ui: 1. drop PDF
+ui -> ui: 2. validateUpload (MIME + magic + size)
+ui -> edge: 3. POST /api/ocr (multipart)
+edge -> ocr: 4. forward (CSP, headers)
+ocr -> ocr: 5. rateLimit + re-validate
+ocr -> mistral: 6. POST PDF bytes
+mistral -> ocr: 7. text + pages
+ocr -> ui: 8. 200 OK with text/pages/durationMs
+
+ui -> hook: 9. start(ocrText, jurisdiction)
+hook -> edge: 10. POST /api/analyze (JSON)
+edge -> analyze: 11. forward
+analyze -> analyze: 12. rateLimit + zod parse
+analyze -> pipe: 13. runRiskPipeline(...)
+
+pipe -> hook: 14. NDJSON stage classify(0)
+pipe -> catalog: 15. classifyContract(text)
+catalog -> pipe: 16. typeId + confidence
+pipe -> hook: 17. NDJSON stage classify(1)
+
+pipe -> hook: 18. NDJSON stage load_rules(0)
+pipe -> catalog: 19. loadRulesForType(typeId, jurisdiction)
+catalog -> pipe: 20. LoadedRuleSet
+pipe -> hook: 21. NDJSON stage load_rules(1)
+
+pipe -> hook: 22. NDJSON stage analyze(0)
+pipe -> claude: 23. messages.stream(system, user)
+
+stream_loop: loop: while text_deltas arrive {
+  claude -> pipe: 24. text_delta
+  pipe -> pipe: 25. buffer + split on newline + zod validate line
+  pipe -> hook: 26a. NDJSON clause (alt: clause event)
+  hook -> ui: 27a. append clause
+  pipe -> hook: 26b. NDJSON summary (alt: summary event)
+  hook -> ui: 27b. render summary
+  pipe -> pipe: 26c. drop silently (alt: invalid line)
+}
+
+claude -> pipe: 28. stream end
+pipe -> hook: 29. NDJSON stage analyze(1)
+pipe -> hook: 30. close stream
+ui -> ui: 31. persist summary to localStorage
+ui -> worker: 32. report visible (< 60s target)
