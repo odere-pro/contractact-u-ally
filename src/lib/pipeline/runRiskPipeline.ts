@@ -9,7 +9,12 @@ import {
 } from "@/lib/anthropicFallback";
 import { classifyContract } from "@/lib/catalog/classifier";
 import { loadRulesForType } from "@/lib/catalog/ruleLoader";
-import { clauseEventSchema, MAX_CONTRACT_BYTES, summaryEventSchema } from "@/lib/catalog/schemas";
+import {
+  clauseEventSchema,
+  MAX_CONTRACT_BYTES,
+  ocrTextEventSchema,
+  summaryEventSchema,
+} from "@/lib/catalog/schemas";
 import type { ClassifyResult, Jurisdiction, LoadedRuleSet } from "@/lib/catalog/types";
 import { runMistralOcr } from "@/lib/mistralOcr";
 
@@ -108,6 +113,11 @@ function validateAndEncodeLine(line: string): Uint8Array | null {
 
   const summary = summaryEventSchema.safeParse(obj);
   if (summary.success) return encodeSummary(summary.data);
+
+  // Mock-fallback only: lets the analyze stream replace the OCR text so
+  // mock clauses have matching snippets to highlight and scroll to.
+  const ocr = ocrTextEventSchema.safeParse(obj);
+  if (ocr.success) return encodeOcrText(ocr.data.text, ocr.data.pages);
 
   return null;
 }

@@ -135,11 +135,18 @@ const MOCK_SUMMARY: SummaryEvent = {
 
 /**
  * NDJSON lines (with trailing "\n") for the analyze stage when Anthropic
- * is unreachable. Shape matches `clauseEventSchema` and `summaryEventSchema`
- * so the existing line validator in runRiskPipeline accepts them.
+ * is unreachable. The first line is an `ocr_text` replacement so the
+ * client swaps the real OCR'd contract for the synthetic one whose text
+ * contains every mock clause's snippet verbatim — without that swap,
+ * the contract pane has no `<mark>` to scroll a card click toward when
+ * mock kicks in mid-stream (e.g. credit exhausted with a real OCR
+ * already on screen).
  */
 export function mockAnalyzeNdjsonLines(): readonly string[] {
+  const ocr = mockOcrResult();
+  const ocrLine = JSON.stringify({ type: "ocr_text", text: ocr.text, pages: ocr.pages }) + "\n";
   return [
+    ocrLine,
     ...MOCK_CLAUSES.map((c) => JSON.stringify(c) + "\n"),
     JSON.stringify(MOCK_SUMMARY) + "\n",
   ];
