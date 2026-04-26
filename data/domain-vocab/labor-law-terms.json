@@ -1,0 +1,527 @@
+{
+  "meta": {
+    "description": "Labor law domain vocabulary for STT context and Claude reasoning. Covers Dutch (NL) and Swedish (SE) employment law abbreviations, legal articles, institutions, and common terms spoken by workers.",
+    "jurisdictions": ["nl", "se"],
+    "version": "1.0.0"
+  },
+
+  "abbreviations": {
+    "nl": [
+      { "abbr": "BW", "full": "Burgerlijk Wetboek", "en": "Dutch Civil Code" },
+      {
+        "abbr": "BW 7",
+        "full": "Boek 7 Burgerlijk Wetboek",
+        "en": "Book 7 of the Civil Code — employment contracts"
+      },
+      { "abbr": "BW 7:610", "full": "Artikel 7:610 BW", "en": "Definition of employment contract" },
+      {
+        "abbr": "BW 7:625",
+        "full": "Artikel 7:625 BW",
+        "en": "Wage claim — employer pays in case of delayed payment"
+      },
+      {
+        "abbr": "BW 7:628",
+        "full": "Artikel 7:628 BW",
+        "en": "Wage during no-work periods (risk for employer)"
+      },
+      {
+        "abbr": "BW 7:629",
+        "full": "Artikel 7:629 BW",
+        "en": "Sickness pay — 70% of wage for up to 2 years"
+      },
+      {
+        "abbr": "BW 7:634",
+        "full": "Artikel 7:634 BW",
+        "en": "Minimum annual leave — 4 × weekly hours"
+      },
+      {
+        "abbr": "BW 7:638",
+        "full": "Artikel 7:638 BW",
+        "en": "Holiday pay — vakantiegeld, minimum 8% of gross annual salary"
+      },
+      {
+        "abbr": "BW 7:646",
+        "full": "Artikel 7:646 BW",
+        "en": "Equal treatment — no discrimination based on sex"
+      },
+      {
+        "abbr": "BW 7:648",
+        "full": "Artikel 7:648 BW",
+        "en": "Non-discrimination on working hours"
+      },
+      {
+        "abbr": "BW 7:650",
+        "full": "Artikel 7:650 BW",
+        "en": "Penalty clause — limits and requirements"
+      },
+      {
+        "abbr": "BW 7:652",
+        "full": "Artikel 7:652 BW",
+        "en": "Probation period — max 1 month (fixed-term <2y), max 2 months (indefinite)"
+      },
+      {
+        "abbr": "BW 7:653",
+        "full": "Artikel 7:653 BW",
+        "en": "Non-compete clause — must be in writing, limited scope and duration"
+      },
+      {
+        "abbr": "BW 7:655",
+        "full": "Artikel 7:655 BW",
+        "en": "Written statement of employment terms (mandatory)"
+      },
+      {
+        "abbr": "BW 7:658",
+        "full": "Artikel 7:658 BW",
+        "en": "Employer duty of care — safe working conditions"
+      },
+      { "abbr": "BW 7:667", "full": "Artikel 7:667 BW", "en": "Fixed-term employment contract" },
+      {
+        "abbr": "BW 7:668",
+        "full": "Artikel 7:668 BW",
+        "en": "Chain rule — max 3 fixed-term contracts or 3 years"
+      },
+      { "abbr": "BW 7:669", "full": "Artikel 7:669 BW", "en": "Grounds for dismissal" },
+      { "abbr": "BW 7:671", "full": "Artikel 7:671 BW", "en": "Notice and termination" },
+      {
+        "abbr": "BW 7:672",
+        "full": "Artikel 7:672 BW",
+        "en": "Statutory notice periods — scales with tenure"
+      },
+      {
+        "abbr": "BW 7:673",
+        "full": "Artikel 7:673 BW",
+        "en": "Transitievergoeding — transition payment on dismissal"
+      },
+      {
+        "abbr": "BW 7:677",
+        "full": "Artikel 7:677 BW",
+        "en": "Summary dismissal (ontslag op staande voet)"
+      },
+      {
+        "abbr": "CAO",
+        "full": "Collectieve Arbeidsovereenkomst",
+        "en": "Collective Labour Agreement — sector-wide minimum conditions"
+      },
+      {
+        "abbr": "WML",
+        "full": "Wet Minimumloon en Minimumvakantiebijslag",
+        "en": "Minimum Wage Act"
+      },
+      {
+        "abbr": "ATW",
+        "full": "Arbeidstijdenwet",
+        "en": "Working Hours Act — max hours, rest periods"
+      },
+      { "abbr": "Arbo", "full": "Arbeidsomstandighedenwet", "en": "Working Conditions Act" },
+      { "abbr": "WWZ", "full": "Wet Werk en Zekerheid", "en": "Work and Security Act" },
+      { "abbr": "WAB", "full": "Wet Arbeidsmarkt in Balans", "en": "Labour Market in Balance Act" },
+      {
+        "abbr": "WIA",
+        "full": "Wet werk en inkomen naar arbeidsvermogen",
+        "en": "Work and Income according to Labour Capacity Act"
+      },
+      { "abbr": "WW", "full": "Werkloosheidswet", "en": "Unemployment Insurance Act" },
+      { "abbr": "ZW", "full": "Ziektewet", "en": "Sickness Benefits Act" },
+      {
+        "abbr": "WGA",
+        "full": "Werkhervatting Gedeeltelijk Arbeidsgeschikten",
+        "en": "Partial disability return-to-work scheme"
+      },
+      {
+        "abbr": "UWV",
+        "full": "Uitvoeringsinstituut Werknemersverzekeringen",
+        "en": "Employee Insurance Agency — dismissal permission, benefits"
+      },
+      {
+        "abbr": "IND",
+        "full": "Immigratie- en Naturalisatiedienst",
+        "en": "Immigration and Naturalisation Service"
+      },
+      {
+        "abbr": "GVVA",
+        "full": "Gecombineerde vergunning voor verblijf en arbeid",
+        "en": "Combined residence and work permit"
+      },
+      {
+        "abbr": "TWV",
+        "full": "Tewerkstellingsvergunning",
+        "en": "Work permit for non-EU workers"
+      },
+      {
+        "abbr": "HSM",
+        "full": "Highly Skilled Migrant",
+        "en": "Kennismigrant — fast-track residence for skilled workers, salary threshold applies"
+      },
+      { "abbr": "KM", "full": "Kennismigrant", "en": "Highly skilled migrant permit" },
+      { "abbr": "VVR", "full": "Verblijfsvergunning regulier", "en": "Regular residence permit" },
+      {
+        "abbr": "AWGB",
+        "full": "Algemene Wet Gelijke Behandeling",
+        "en": "Equal Treatment Act — no discrimination in employment"
+      },
+      {
+        "abbr": "FNV",
+        "full": "Federatie Nederlandse Vakbeweging",
+        "en": "Largest Dutch trade union federation"
+      },
+      {
+        "abbr": "CNV",
+        "full": "Christelijk Nationaal Vakverbond",
+        "en": "Christian trade union confederation"
+      },
+      {
+        "abbr": "VCP",
+        "full": "Vakcentrale voor Professionals",
+        "en": "Trade union for professionals"
+      },
+      {
+        "abbr": "OR",
+        "full": "Ondernemingsraad",
+        "en": "Works council — employee representation body"
+      },
+      {
+        "abbr": "RI&E",
+        "full": "Risico-inventarisatie en -evaluatie",
+        "en": "Risk inventory and evaluation (Arbo obligation)"
+      },
+      { "abbr": "SV", "full": "Sociale Verzekeringen", "en": "Social insurance contributions" },
+      {
+        "abbr": "IBA",
+        "full": "Inkomensbasisbedrag",
+        "en": "Income base amount — used for pension thresholds"
+      }
+    ],
+    "se": [
+      {
+        "abbr": "LAS",
+        "full": "Lagen om anställningsskydd",
+        "en": "Employment Protection Act — core dismissal rules"
+      },
+      {
+        "abbr": "MBL",
+        "full": "Medbestämmandelagen",
+        "en": "Co-determination Act — union negotiation rights"
+      },
+      { "abbr": "ATL", "full": "Arbetstidslagen", "en": "Working Time Act — max 48h/week average" },
+      { "abbr": "SemL", "full": "Semesterlagen", "en": "Annual Leave Act — 25 days minimum" },
+      {
+        "abbr": "SjLL",
+        "full": "Sjuklönelagen",
+        "en": "Sick Pay Act — employer pays first 14 days"
+      },
+      { "abbr": "FML", "full": "Förtroendemannalagen", "en": "Shop Stewards Act" },
+      { "abbr": "PBL", "full": "Föräldraledighetslagen", "en": "Parental Leave Act" },
+      { "abbr": "DiskL", "full": "Diskrimineringslagen", "en": "Discrimination Act" },
+      { "abbr": "AD", "full": "Arbetsdomstolen", "en": "Swedish Labour Court" },
+      {
+        "abbr": "LO",
+        "full": "Landsorganisationen",
+        "en": "Swedish Trade Union Confederation (blue-collar)"
+      },
+      {
+        "abbr": "TCO",
+        "full": "Tjänstemännens Centralorganisation",
+        "en": "Confederation of Professional Employees (white-collar)"
+      },
+      {
+        "abbr": "SACO",
+        "full": "Sveriges akademikers centralorganisation",
+        "en": "Swedish Confederation of Professional Associations (academic)"
+      },
+      { "abbr": "IF Metall", "full": "Industrifacket Metall", "en": "Swedish Metalworkers Union" },
+      { "abbr": "Unionen", "full": "Unionen", "en": "Largest white-collar union in Sweden" },
+      {
+        "abbr": "Migrationsverket",
+        "full": "Migrationsverket",
+        "en": "Swedish Migration Agency — residence and work permits"
+      },
+      {
+        "abbr": "IBA",
+        "full": "Inkomstbasbelopp",
+        "en": "Income base amount — used for pension ceilings (e.g. 7.5x IBA)"
+      },
+      {
+        "abbr": "PBA",
+        "full": "Prisbasbelopp",
+        "en": "Price base amount — used for benefit calculations"
+      },
+      {
+        "abbr": "SOU",
+        "full": "Statens offentliga utredningar",
+        "en": "Government official reports"
+      },
+      {
+        "abbr": "kollektivavtal",
+        "full": "Kollektivavtal",
+        "en": "Collective agreement — supplements or overrides statutory minimums"
+      },
+      {
+        "abbr": "turordning",
+        "full": "Turordningsreglerna",
+        "en": "Seniority order for redundancy — last in, first out"
+      },
+      { "abbr": "Riksdag", "full": "Riksdagen", "en": "Swedish Parliament" }
+    ]
+  },
+
+  "key_concepts": {
+    "nl": [
+      {
+        "term": "vakantiegeld",
+        "en": "holiday allowance",
+        "note": "Minimum 8% of gross annual salary, paid annually (usually May/June)"
+      },
+      {
+        "term": "transitievergoeding",
+        "en": "transition payment",
+        "note": "Severance pay on dismissal — 1/3 month salary per year worked"
+      },
+      {
+        "term": "proeftijd",
+        "en": "probation period",
+        "note": "Max 1 month (fixed-term <2y), max 2 months (indefinite). Must be equal for both parties"
+      },
+      {
+        "term": "concurrentiebeding",
+        "en": "non-compete clause",
+        "note": "Must be in writing. For indefinite contracts requires motivation. Courts can annul disproportionate clauses"
+      },
+      {
+        "term": "relatiebeding",
+        "en": "non-solicitation clause",
+        "note": "Restriction on approaching former clients/employees after employment ends"
+      },
+      {
+        "term": "geheimhoudingsbeding",
+        "en": "confidentiality clause",
+        "note": "Unlimited duration is overbroad; should specify categories and duration"
+      },
+      {
+        "term": "ontslag op staande voet",
+        "en": "summary dismissal",
+        "note": "Immediate termination without notice — requires urgent cause"
+      },
+      {
+        "term": "kennismigrant",
+        "en": "highly skilled migrant",
+        "note": "Salary threshold requirement — employer must pay above IND minimum (2025: ~€5,688/month)"
+      },
+      {
+        "term": "oproepcontract",
+        "en": "zero-hours contract",
+        "note": "Must offer fixed hours after 12 months if consistent work pattern"
+      },
+      {
+        "term": "uitzendovereenkomst",
+        "en": "temp agency contract",
+        "note": "Phase system: A (flexible), B (fixed-term), C (indefinite)"
+      },
+      {
+        "term": "payroll",
+        "en": "payrolling",
+        "note": "Worker employed by payroll company but works for user company — extra protections apply"
+      },
+      {
+        "term": "ZZP",
+        "en": "self-employed / freelancer",
+        "note": "No employment contract — risk of bogus self-employment if employer controls work"
+      },
+      {
+        "term": "loondoorbetaling",
+        "en": "continued wage payment",
+        "note": "Employer must pay 70% (min. minimum wage) during sickness for up to 2 years"
+      },
+      {
+        "term": "onregelmatigheidstoeslag",
+        "en": "irregular hours allowance",
+        "note": "Supplement for evening, night, and weekend work — often CAO-regulated"
+      },
+      {
+        "term": "overwerk",
+        "en": "overtime",
+        "note": "No statutory right to overtime pay unless agreed or via CAO"
+      },
+      {
+        "term": "studiekostenbeding",
+        "en": "training cost clause",
+        "note": "Repayment obligation for employer-paid training — courts scrutinise proportionality"
+      },
+      {
+        "term": "boetebeding",
+        "en": "penalty clause",
+        "note": "Fine for breach of contract terms — max €909 per violation unless employer"
+      },
+      {
+        "term": "ketenbepaling",
+        "en": "chain rule",
+        "note": "Max 3 fixed-term contracts or 3 years before automatic indefinite contract"
+      }
+    ],
+    "se": [
+      {
+        "term": "provanställning",
+        "en": "probation employment",
+        "note": "Max 6 months. Either party can terminate without reason during trial period"
+      },
+      {
+        "term": "tillsvidareanställning",
+        "en": "indefinite employment",
+        "note": "Standard permanent contract — strong dismissal protections under LAS"
+      },
+      {
+        "term": "visstidsanställning",
+        "en": "fixed-term employment",
+        "note": "Max 2 years total (ALVA rules). Converts to indefinite after threshold"
+      },
+      {
+        "term": "turordning",
+        "en": "redundancy seniority",
+        "note": "Last in, first out rule — can be modified by collective agreement"
+      },
+      {
+        "term": "saklig grund",
+        "en": "objective grounds",
+        "note": "Required justification for dismissal under LAS"
+      },
+      {
+        "term": "konkurrensklausul",
+        "en": "non-compete clause",
+        "note": "Must be proportionate and compensated; industry guidelines limit to 9-18 months"
+      },
+      {
+        "term": "lojalitetsplikt",
+        "en": "duty of loyalty",
+        "note": "Implied obligation not to work against employer's interests during employment"
+      },
+      {
+        "term": "semesterersättning",
+        "en": "holiday pay",
+        "note": "12% of gross salary if not paid as part of monthly salary"
+      },
+      {
+        "term": "föräldraledighet",
+        "en": "parental leave",
+        "note": "480 days shared parental leave under PBL — employer cannot refuse"
+      },
+      {
+        "term": "sjuklön",
+        "en": "sick pay",
+        "note": "80% of salary, paid by employer for first 14 days"
+      },
+      {
+        "term": "IBA-tak",
+        "en": "IBA pension ceiling",
+        "note": "Pension contributions typically split: higher % above 7.5x IBA (income base amount)"
+      },
+      {
+        "term": "uppsägningstid",
+        "en": "notice period",
+        "note": "LAS minimum: 1-6 months based on tenure. Employer cannot require more from employee than employee from employer"
+      },
+      {
+        "term": "varsel",
+        "en": "advance notice of redundancy",
+        "note": "Statutory notice to Employment Service (Arbetsförmedlingen) for collective redundancies"
+      }
+    ]
+  },
+
+  "spoken_variants": [
+    { "spoken": "be double-u", "canonical": "BW" },
+    { "spoken": "be-w", "canonical": "BW" },
+    { "spoken": "cao", "canonical": "CAO" },
+    { "spoken": "uw-v", "canonical": "UWV" },
+    { "spoken": "ind", "canonical": "IND" },
+    { "spoken": "las", "canonical": "LAS" },
+    { "spoken": "fnv", "canonical": "FNV" },
+    { "spoken": "cnv", "canonical": "CNV" },
+    { "spoken": "gvva", "canonical": "GVVA" },
+    { "spoken": "twv", "canonical": "TWV" },
+    { "spoken": "zzp", "canonical": "ZZP" },
+    { "spoken": "zzp'er", "canonical": "ZZP-er (freelancer)" },
+    { "spoken": "mbl", "canonical": "MBL" },
+    { "spoken": "saco", "canonical": "SACO" },
+    { "spoken": "tco", "canonical": "TCO" },
+    { "spoken": "lo", "canonical": "LO" },
+    { "spoken": "ad", "canonical": "Arbetsdomstolen (AD)" },
+    { "spoken": "vakantiegeld", "canonical": "vakantiegeld (holiday allowance, BW 7:638)" },
+    {
+      "spoken": "transitievergoeding",
+      "canonical": "transitievergoeding (transition payment, BW 7:673)"
+    },
+    { "spoken": "proeftijd", "canonical": "proeftijd (probation period, BW 7:652)" },
+    { "spoken": "concurrentiebeding", "canonical": "concurrentiebeding (non-compete, BW 7:653)" },
+    { "spoken": "kennismigrant", "canonical": "kennismigrant (highly skilled migrant, HSM)" },
+    { "spoken": "oproepcontract", "canonical": "oproepcontract (zero-hours contract)" },
+    { "spoken": "ketenbepaling", "canonical": "ketenbepaling (chain rule, BW 7:668)" },
+    { "spoken": "loonstrook", "canonical": "loonstrook (payslip)" },
+    { "spoken": "provanstallning", "canonical": "provanställning (Swedish probation)" },
+    { "spoken": "turordning", "canonical": "turordning (Swedish seniority order)" }
+  ],
+
+  "institutions": {
+    "nl": [
+      {
+        "name": "FNV",
+        "url": "fnv.nl",
+        "role": "Largest trade union — legal advice, collective bargaining"
+      },
+      { "name": "CNV", "url": "cnv.nl", "role": "Christian trade union — member support" },
+      {
+        "name": "UWV",
+        "url": "uwv.nl",
+        "role": "Employee insurance agency — dismissal permission, WW/ZW benefits"
+      },
+      { "name": "IND", "url": "ind.nl", "role": "Immigration — residence and work permits" },
+      {
+        "name": "Arbeidsinspectie",
+        "url": "nlarbeidsinspectie.nl",
+        "role": "Labour inspectorate — reports minimum wage violations, working conditions"
+      },
+      {
+        "name": "Rechtspraak",
+        "url": "rechtspraak.nl",
+        "role": "Court system — file civil claims, kantonsector for employment disputes"
+      },
+      {
+        "name": "Loket.nl",
+        "url": "loket.nl",
+        "role": "Government portal for employment rights information"
+      },
+      {
+        "name": "SZW",
+        "url": "rijksoverheid.nl",
+        "role": "Ministry of Social Affairs and Employment"
+      }
+    ],
+    "se": [
+      {
+        "name": "Unionen",
+        "url": "unionen.se",
+        "role": "Largest white-collar union — free legal advice for members"
+      },
+      { "name": "LO", "url": "lo.se", "role": "Blue-collar union confederation" },
+      { "name": "SACO", "url": "saco.se", "role": "Academic/professional union confederation" },
+      {
+        "name": "Migrationsverket",
+        "url": "migrationsverket.se",
+        "role": "Work and residence permits"
+      },
+      {
+        "name": "Arbetsdomstolen",
+        "url": "arbetsdomstolen.se",
+        "role": "Swedish Labour Court — employment disputes"
+      },
+      {
+        "name": "Arbetsmiljöverket",
+        "url": "av.se",
+        "role": "Work environment authority — safety, working conditions"
+      },
+      {
+        "name": "Arbetsförmedlingen",
+        "url": "arbetsformedlingen.se",
+        "role": "Employment service — redundancy notification"
+      }
+    ]
+  }
+}

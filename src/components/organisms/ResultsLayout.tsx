@@ -12,11 +12,13 @@ import { HitlBanner } from "@/components/molecules/HitlBanner";
 import { DEFAULT_FILTER, type SeverityFilter } from "@/lib/clauseFilters";
 import { severityOf } from "@/lib/severity";
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
+import type { UseVoiceReturn } from "@/hooks/useVoice";
 
 interface ResultsLayoutProps {
   readonly ocrText: string;
   readonly clauses: readonly ClauseEvent[];
   readonly summary: SummaryEvent | null;
+  readonly voice?: UseVoiceReturn;
 }
 
 // 3-pane results surface. Owns transient UI state — active clause,
@@ -29,7 +31,7 @@ interface ResultsLayoutProps {
 // generous minmax floor so the contract text never collapses to a
 // word-per-line wrap. Below ~1024px we fall back to a stacked layout
 // so each pane is still individually readable.
-export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps) {
+export function ResultsLayout({ ocrText, clauses, summary, voice }: ResultsLayoutProps) {
   // Compliant clauses are dropped from every display surface — they're
   // noise in a "what to fix" UI. Counts in `summary` and `illegalCount`
   // still reflect the full set, so the HITL banner and share report stay
@@ -88,6 +90,7 @@ export function ResultsLayout({ ocrText, clauses, summary }: ResultsLayoutProps)
             selectionNonce={selectionNonce}
             onSelectClause={handleSelectClause}
             onShowWhy={handleShowWhy}
+            voice={voice}
           />
         </div>
       </div>
