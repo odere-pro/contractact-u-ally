@@ -16,6 +16,7 @@ const summary: SummaryEvent = {
   permitConflictCount: 0,
   uncheckedCount: 0,
   compliantCount: 1,
+  ok: false,
 };
 
 const clauses: readonly ClauseEvent[] = [

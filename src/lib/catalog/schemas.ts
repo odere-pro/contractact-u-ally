@@ -119,6 +119,11 @@ export const summaryEventSchema = z.object({
   permitConflictCount: z.number().int().nonnegative(),
   uncheckedCount: z.number().int().nonnegative(),
   compliantCount: z.number().int().nonnegative(),
+  // Claude does not produce this field. The pipeline derives it from the
+  // counts and injects it before emitting on the wire; default(false) lets
+  // the same schema parse Claude's raw output and the enriched event while
+  // keeping the consumer-facing type as `boolean`.
+  ok: z.boolean().default(false),
 });
 
 // Emitted once, right after `stage ocr (progress: 1)` — gives the client
