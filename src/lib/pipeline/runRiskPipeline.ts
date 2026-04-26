@@ -3,24 +3,40 @@ import "server-only";
 import { getAnthropic } from "@/lib/anthropicClient";
 import { classifyContract } from "@/lib/catalog/classifier";
 import { loadRulesForType } from "@/lib/catalog/ruleLoader";
-import { clauseEventSchema, summaryEventSchema } from "@/lib/catalog/schemas";
+import { clauseEventSchema, MAX_CONTRACT_BYTES, summaryEventSchema } from "@/lib/catalog/schemas";
 import type { ClassifyResult, Jurisdiction, LoadedRuleSet } from "@/lib/catalog/types";
+import { runMistralOcr } from "@/lib/mistralOcr";
 
 import { buildAnalysisSystemPrompt, loadRiskExamples } from "./prompts";
-import { encodeClause, encodeError, encodeStage, encodeSummary } from "./streamEvents";
+import {
+  encodeClause,
+  encodeError,
+  encodeOcrText,
+  encodeStage,
+  encodeSummary,
+} from "./streamEvents";
 
 const ANALYZE_MODEL = "claude-sonnet-4-6";
 const ANALYZE_MAX_TOKENS = 8192;
 
+export type OcrResult =
+  | {
+      readonly ok: true;
+      readonly text: string;
+      readonly pages: number;
+      readonly durationMs: number;
+    }
+  | { readonly ok: false; readonly reason: string };
+
+export type OcrFactory = (pdfBytes: Uint8Array) => Promise<OcrResult>;
+
 export interface RunRiskPipelineOptions {
-  readonly ocrText: string;
+  readonly pdfBytes: Uint8Array;
+  readonly mistralApiKey: string;
   readonly jurisdiction?: Jurisdiction;
   readonly typeId?: string;
-  /**
-   * Source of incremental text deltas to parse as NDJSON. In production the
-   * default factory wires this to Claude streaming. Tests inject a fake.
-   */
   readonly textStreamFactory?: TextStreamFactory;
+  readonly ocrFactory?: OcrFactory;
 }
 
 export interface TextStreamSourceArgs {
@@ -30,10 +46,6 @@ export interface TextStreamSourceArgs {
 
 export type TextStreamFactory = (args: TextStreamSourceArgs) => AsyncIterable<string>;
 
-/**
- * Default factory: drive Claude via Anthropic SDK streaming and yield text
- * deltas as they arrive.
- */
 async function* defaultClaudeStream(args: TextStreamSourceArgs): AsyncIterable<string> {
   const anthropicStream = getAnthropic().messages.stream({
     model: ANALYZE_MODEL,
@@ -49,10 +61,6 @@ async function* defaultClaudeStream(args: TextStreamSourceArgs): AsyncIterable<s
   }
 }
 
-/**
- * Try to parse one trimmed JSON line as either a ClauseEvent or SummaryEvent.
- * Returns the encoded NDJSON line, or null if the line is malformed.
- */
 function validateAndEncodeLine(line: string): Uint8Array | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
@@ -73,28 +81,36 @@ function validateAndEncodeLine(line: string): Uint8Array | null {
   return null;
 }
 
+const utf8ByteLength = (s: string): number => new TextEncoder().encode(s).byteLength;
+
+class OcrPipelineError extends Error {
+  override readonly name = "OcrPipelineError";
+}
+
+class ContractTextRangeError extends Error {
+  override readonly name = "ContractTextRangeError";
+}
+
 /**
- * Orchestrate classify → load rules → Claude stream → emit NDJSON.
+ * Orchestrate ocr → classify → load rules → Claude stream → emit NDJSON.
  *
  * The returned ReadableStream emits, in order:
- *   1. {"type":"stage","stage":"classify","progress":0|1}
- *   2. {"type":"stage","stage":"load_rules","progress":0|1}
- *   3. {"type":"stage","stage":"analyze","progress":0}
- *   4. many {"type":"clause", …}
- *   5. one {"type":"summary", …}
+ *   1. {"type":"stage","stage":"ocr","progress":0|1}
+ *   2. {"type":"stage","stage":"classify","progress":0|1}
+ *   3. {"type":"stage","stage":"load_rules","progress":0|1}
+ *   4. {"type":"stage","stage":"analyze","progress":0}
+ *   5. many {"type":"clause", …}
+ *   6. one {"type":"summary", …}
  *
  * On failure, emits {"type":"error","message":"…"} and closes. The HTTP
  * status is fixed at 200 because headers have already flushed.
  */
 export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Uint8Array> {
-  const factory = opts.textStreamFactory ?? defaultClaudeStream;
+  const textFactory = opts.textStreamFactory ?? defaultClaudeStream;
+  const ocrFactory = opts.ocrFactory ?? defaultMistralOcr(opts.mistralApiKey);
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
-      // The consumer can disconnect at any moment (browser tab closed,
-      // useAnalysisStream aborted, etc.). After that, controller.enqueue
-      // throws TypeError; we must not propagate that as a pipeline error.
-      // Track local liveness so a single guarded enqueue covers all paths.
       let alive = true;
       const safeEnqueue = (chunk: Uint8Array): void => {
         if (!alive) return;
@@ -106,14 +122,36 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
       };
 
       try {
-        // Stage 1: classify
+        // Stage 1: OCR. Server-internal — the browser only sees stage
+        // events; the PDF never round-trips back as a separate response.
+        safeEnqueue(encodeStage("ocr", 0));
+        const ocr = await ocrFactory(opts.pdfBytes);
+        if (!ocr.ok) throw new OcrPipelineError(ocr.reason);
+
+        // Guard the prompt builder against pathological OCR output.
+        // 200 chars is the floor for "looks like a real contract"; 500
+        // KB UTF-8 protects the model context window.
+        if (ocr.text.length < 200) {
+          throw new ContractTextRangeError("OCR text too short — likely an OCR failure");
+        }
+        if (utf8ByteLength(ocr.text) > MAX_CONTRACT_BYTES) {
+          throw new ContractTextRangeError("OCR text exceeds 500KB");
+        }
+        safeEnqueue(encodeStage("ocr", 1));
+
+        const ocrText = ocr.text;
+        // Hand the extracted text to the client up front so the contract
+        // preview can render alongside the streaming clause results.
+        safeEnqueue(encodeOcrText(ocrText, ocr.pages));
+
+        // Stage 2: classify
         safeEnqueue(encodeStage("classify", 0));
         const classifyResult: ClassifyResult = opts.typeId
           ? { typeId: opts.typeId, confidence: 1, jurisdiction: opts.jurisdiction ?? "nl" }
-          : await classifyContract(opts.ocrText, opts.jurisdiction);
+          : await classifyContract(ocrText, opts.jurisdiction);
         safeEnqueue(encodeStage("classify", 1));
 
-        // Stage 2: load rules
+        // Stage 3: load rules
         safeEnqueue(encodeStage("load_rules", 0));
         const [ruleSet, riskExamples]: [LoadedRuleSet, string] = await Promise.all([
           loadRulesForType(classifyResult.typeId, classifyResult.jurisdiction),
@@ -121,18 +159,17 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
         ]);
         safeEnqueue(encodeStage("load_rules", 1));
 
-        // Stage 3: analyze (streaming)
+        // Stage 4: analyze (streaming)
         safeEnqueue(encodeStage("analyze", 0));
         const systemPrompt = buildAnalysisSystemPrompt(ruleSet, riskExamples);
 
         let buffer = "";
-        for await (const delta of factory({
+        for await (const delta of textFactory({
           systemPrompt,
-          userMessage: `Analyze this contract:\n\n${opts.ocrText}`,
+          userMessage: `Analyze this contract:\n\n${ocrText}`,
         })) {
           if (!alive) break;
           buffer += delta;
-          // NDJSON: split on newlines, emit complete lines, keep the tail.
           const lines = buffer.split("\n");
           buffer = lines.pop() ?? "";
           for (const line of lines) {
@@ -140,7 +177,6 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
             if (out) safeEnqueue(out);
           }
         }
-        // Flush trailing fragment, if any.
         if (alive && buffer.trim()) {
           const out = validateAndEncodeLine(buffer);
           if (out) safeEnqueue(out);
@@ -148,12 +184,6 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
 
         if (alive) controller.close();
       } catch (err) {
-        // We deliberately keep error reporting in-band as a {type:"error"}
-        // event because the HTTP status is already 200 once headers flush —
-        // controller.error() would surface to the client as a network
-        // failure with no recoverable message. The UI hook reads the event
-        // and transitions to phase=error. Sanitize the message so internal
-        // paths / SDK internals don't leak.
         const message = sanitizeErrorMessage(err);
         safeEnqueue(encodeError(message));
         if (alive) {
@@ -168,12 +198,35 @@ export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Ui
   });
 }
 
+function defaultMistralOcr(apiKey: string): OcrFactory {
+  return async (pdfBytes) => {
+    const result = await runMistralOcr(pdfBytes, apiKey);
+    if (!result.ok) return { ok: false, reason: result.reason };
+    return { ok: true, text: result.text, pages: result.pages, durationMs: result.durationMs };
+  };
+}
+
+// Domain error messages are programmer-controlled and therefore safe
+// to surface, but we still cap their length and run the same
+// path-fragment filter as `sanitizeErrorMessage` so a future change
+// that introduces user-controlled content into `reason` cannot silently
+// bypass sanitization.
+function safeDomainMessage(message: string, fallback: string): string {
+  if (message.length > 120) return fallback;
+  if (message.includes("ENOENT") || message.includes("/")) return fallback;
+  return message;
+}
+
 /**
  * Produce a client-safe error message. Filesystem paths from `ENOENT`,
  * SDK internals, and stack fragments must not reach the browser; map
  * known categories to fixed strings, log the raw error server-side.
  */
 function sanitizeErrorMessage(err: unknown): string {
+  if (err instanceof OcrPipelineError) return safeDomainMessage(err.message, "OCR pipeline error");
+  if (err instanceof ContractTextRangeError) {
+    return safeDomainMessage(err.message, "Contract text out of accepted range");
+  }
   if (err instanceof Error) {
     const raw = err.message;
     console.error("runRiskPipeline failure:", err);

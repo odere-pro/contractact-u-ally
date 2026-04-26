@@ -91,7 +91,7 @@ export type ClassifyResponse = z.infer<typeof classifyResponseSchema>;
 
 export const stageEventSchema = z.object({
   type: z.literal("stage"),
-  stage: z.enum(["classify", "load_rules", "analyze"]),
+  stage: z.enum(["ocr", "classify", "load_rules", "analyze"]),
   progress: z.number().min(0).max(1),
 });
 
@@ -121,6 +121,15 @@ export const summaryEventSchema = z.object({
   compliantCount: z.number().int().nonnegative(),
 });
 
+// Emitted once, right after `stage ocr (progress: 1)` — gives the client
+// the extracted text so it can render the highlighted contract preview
+// without a second round trip.
+export const ocrTextEventSchema = z.object({
+  type: z.literal("ocr_text"),
+  text: z.string().min(1),
+  pages: z.number().int().nonnegative(),
+});
+
 export const errorEventSchema = z.object({
   type: z.literal("error"),
   message: z.string().min(1),
@@ -128,9 +137,11 @@ export const errorEventSchema = z.object({
 
 // --- /api/analyze request ---
 
-// 500 KB cap on OCR text; UTF-8 byte-aware so we don't trip on multi-byte chars.
+// Server-side guard against pathological OCR output. The PDF itself is
+// already capped at 10 MB by upload validation; this protects the prompt
+// builder from a malicious provider response that would otherwise blow
+// past the model context.
 export const MAX_CONTRACT_BYTES = 500 * 1024;
-const utf8ByteLength = (s: string): number => new TextEncoder().encode(s).byteLength;
 
 // typeId is interpolated into a filesystem path by ruleLoader.loadSpec, so
 // it must be locked to a strict allowlist shape — anything outside this
@@ -144,14 +155,9 @@ export const typeIdSchema = z
   .max(64)
   .regex(TYPE_ID_PATTERN, "typeId must match /^[a-z]{2}-[a-z0-9-]+$/");
 
-export const analyzeRequestSchema = z.object({
-  ocrText: z
-    .string()
-    .min(200, "ocrText too short — likely an OCR failure")
-    .refine((s) => utf8ByteLength(s) <= MAX_CONTRACT_BYTES, {
-      message: "ocrText exceeds 500KB",
-    }),
+// Optional form fields that ride alongside the PDF on /api/analyze.
+export const analyzeFormFieldsSchema = z.object({
   jurisdiction: jurisdictionSchema.optional(),
   typeId: typeIdSchema.optional(),
 });
-export type AnalyzeRequestInput = z.infer<typeof analyzeRequestSchema>;
+export type AnalyzeFormFields = z.infer<typeof analyzeFormFieldsSchema>;

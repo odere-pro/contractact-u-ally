@@ -1,0 +1,25 @@
+# contractact-u-ally — Processing algorithm (horizontal)
+# Render: d2 docs/diagrams/src/algorithm.d2 docs/diagrams/img/algorithm.svg
+
+direction: right
+
+receive: "Receive PDF\n/api/analyze"
+ocr: "OCR\n(Mistral)"
+classify: "Classify\ncontract type"
+rules: "Load rules\ntype + jurisdiction"
+prompt: "Build prompt"
+stream: "Claude stream\n(text deltas)"
+validate: "Validate line\n(zod)" {shape: diamond}
+emit: "Emit NDJSON\n(stage / clause / summary)"
+done: "Stream end"
+
+receive -> ocr
+ocr -> classify
+classify -> rules
+rules -> prompt
+prompt -> stream
+stream -> validate
+validate -> emit: ok
+validate -> stream: drop\n(invalid)
+emit -> stream: next delta
+emit -> done: summary

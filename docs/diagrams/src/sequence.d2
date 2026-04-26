@@ -1,0 +1,35 @@
+# contractact-u-ally — Request path (D2 sequence)
+# One trip: client posts PDF, server runs OCR + analysis,
+# server streams stage / clause / summary back over the same response.
+# Render: d2 docs/diagrams/src/sequence.d2 docs/diagrams/img/sequence.svg
+
+shape: sequence_diagram
+
+browser: Browser
+api: /api/analyze
+pipe: runRiskPipeline
+mistral: Mistral OCR
+catalog: Rule Catalog
+claude: Anthropic Claude
+
+browser -> api: POST PDF
+api -> pipe: run
+
+pipe -> mistral: PDF bytes
+mistral -> pipe: text
+pipe -> browser: stage ocr (done)
+
+pipe -> catalog: classify + load rules
+catalog -> pipe: ruleSet
+pipe -> browser: stage rules (done)
+
+pipe -> claude: messages.stream
+
+"loop — per text_delta": {
+  claude -> pipe: delta
+  pipe -> pipe: parse + zod
+  pipe -> browser: NDJSON clause or summary
+}
+
+claude -> pipe: end
+pipe -> browser: stream end

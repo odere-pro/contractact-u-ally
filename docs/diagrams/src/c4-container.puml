@@ -1,0 +1,27 @@
+@startuml c4-container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.10.0/C4_Container.puml
+
+LAYOUT_LEFT_RIGHT()
+HIDE_STEREOTYPE()
+
+title Containers — contractact-u-ally
+
+Person(worker, "Worker")
+
+System_Boundary(app, "contractact-u-ally") {
+  Container(ui, "Web UI", "Next.js / React")
+  Container(api, "/api/analyze", "Route handler")
+  Container(pipeline, "runRiskPipeline", "Pipeline module")
+  Container(catalog, "Rule Catalog", "Rules + zod schemas")
+}
+
+System_Ext(mistral, "Mistral OCR")
+System_Ext(anthropic, "Anthropic Claude")
+
+Rel(worker, ui, "HTTPS")
+Rel(ui, api, "POST PDF · NDJSON stream back")
+Rel(api, pipeline, "run")
+Rel(pipeline, mistral, "OCR")
+Rel(pipeline, catalog, "classify · load rules")
+Rel(pipeline, anthropic, "messages.stream")
+@enduml

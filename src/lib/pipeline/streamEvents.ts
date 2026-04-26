@@ -4,6 +4,7 @@ import type {
   AnalyzeStage,
   ClauseEvent,
   ErrorEvent,
+  OcrTextEvent,
   StageEvent,
   SummaryEvent,
 } from "@/lib/catalog/types";
@@ -16,6 +17,11 @@ function encode(obj: unknown): Uint8Array {
 
 export function encodeStage(stage: AnalyzeStage, progress: number): Uint8Array {
   const event: StageEvent = { type: "stage", stage, progress };
+  return encode(event);
+}
+
+export function encodeOcrText(text: string, pages: number): Uint8Array {
+  const event: OcrTextEvent = { type: "ocr_text", text, pages };
   return encode(event);
 }
 
