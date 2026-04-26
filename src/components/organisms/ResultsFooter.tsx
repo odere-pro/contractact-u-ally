@@ -10,7 +10,7 @@ interface ResultsFooterProps {
 
 export function ResultsFooter({ onShare }: ResultsFooterProps) {
   return (
-    <footer className="border-border bg-card/40 sticky bottom-0 flex flex-wrap items-center gap-2 border-t p-3">
+    <footer className="border-border bg-background sticky bottom-0 flex flex-wrap items-center gap-2 border-t p-3">
       <span className="text-muted-foreground text-xs">
         Document and analysis stay in this browser.
       </span>

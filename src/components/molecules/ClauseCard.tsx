@@ -17,36 +17,22 @@ interface ClauseCardProps {
   readonly onShowWhy?: (clause: ClauseEvent) => void;
 }
 
-// Per-severity visual treatment. The bar runs the full height of the
-// card so the severity is readable from across the screen; the soft tint
-// runs across the header so users can scan severity without reading the
-// label. Border color also shifts so the whole card carries the signal.
-const SEVERITY_BAR: Record<Severity, string> = {
-  critical: "bg-[var(--color-critical)]",
-  medium: "bg-[var(--color-medium)]",
-  low: "bg-[var(--color-low)]",
-  ok: "bg-[var(--color-ok)]",
+// Per-severity treatment. The whole card carries a soft tint so collapsed
+// cards read at a glance; a 4px solid bar on the left edge gives the
+// severity the same prominence the HitlBanner uses, keeping the visual
+// language consistent across surfaces.
+const SEVERITY_TINT: Record<Severity, string> = {
+  critical: "bg-[var(--color-critical-soft)]/55",
+  medium: "bg-[var(--color-medium-soft)]/55",
+  low: "bg-[var(--color-low-soft)]/55",
+  ok: "bg-[var(--color-ok-soft)]/55",
 };
 
-const SEVERITY_HEADER_TINT: Record<Severity, string> = {
-  critical: "bg-[var(--color-critical-soft)]/60",
-  medium: "bg-[var(--color-medium-soft)]/60",
-  low: "bg-[var(--color-low-soft)]/60",
-  ok: "bg-[var(--color-ok-soft)]/60",
-};
-
-const SEVERITY_BORDER: Record<Severity, string> = {
-  critical: "border-[var(--color-critical)]/35",
-  medium: "border-[var(--color-medium)]/40",
-  low: "border-[var(--color-low)]/45",
-  ok: "border-[var(--color-ok)]/40",
-};
-
-const SEVERITY_FEATURED_BORDER: Record<Severity, string> = {
-  critical: "border-[var(--color-critical)]",
-  medium: "border-[var(--color-medium)]",
-  low: "border-[var(--color-low)]",
-  ok: "border-[var(--color-ok)]",
+const SEVERITY_LEFT_BAR: Record<Severity, string> = {
+  critical: "border-l-[var(--color-critical)]",
+  medium: "border-l-[var(--color-medium)]",
+  low: "border-l-[var(--color-low)]",
+  ok: "border-l-[var(--color-ok)]",
 };
 
 const SEVERITY_BADGE: Record<Severity, string> = {
@@ -89,20 +75,21 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
       onKeyDown={handleKeyDown}
       style={{
         transition:
-          "border-color var(--duration-fast) var(--ease-out-expo), box-shadow var(--duration-fast) var(--ease-out-expo)",
+          "box-shadow var(--duration-fast) var(--ease-out-expo), background-color var(--duration-fast) var(--ease-out-expo)",
       }}
       className={cn(
-        "focus-visible:ring-ring/60 relative cursor-pointer overflow-hidden border-2 pl-1.5 outline-none focus-visible:ring-2",
-        featured ? SEVERITY_FEATURED_BORDER[severity] : SEVERITY_BORDER[severity],
+        // Override Card's default `gap-4 py-4` so the tint reaches the
+        // top and bottom edges instead of leaving a white strip.
+        "relative cursor-pointer gap-0 overflow-hidden py-0 outline-none",
+        "border border-l-4 border-[color:var(--color-border)]",
+        SEVERITY_LEFT_BAR[severity],
+        SEVERITY_TINT[severity],
+        "focus-visible:ring-ring/60 focus-visible:ring-2",
         featured && "shadow-md",
       )}
     >
-      <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1.5", SEVERITY_BAR[severity])} />
-      <div
-        style={{ transition: "background-color var(--duration-fast) var(--ease-out-expo)" }}
-        className={cn("flex w-full items-start gap-3 px-4 py-4", SEVERITY_HEADER_TINT[severity])}
-      >
-        <SeverityIcon severity={severity} className="mt-0.5 size-6 shrink-0" />
+      <div className="flex w-full items-start gap-3 px-4 py-3.5">
+        <SeverityIcon severity={severity} className="mt-0.5 size-5 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -117,18 +104,21 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
               {clause.id}
             </span>
           </div>
-          <h3 className="text-foreground mt-1.5 text-lg leading-snug font-semibold tracking-tight">
+          <h3 className="text-foreground mt-1 text-base leading-snug font-semibold tracking-tight">
             {clause.title}
           </h3>
         </div>
         <ChevronDown
           aria-hidden
-          className={cn("text-foreground/70 mt-1.5 size-5 shrink-0", expanded && "rotate-180")}
+          className={cn("text-foreground/60 mt-1 size-5 shrink-0", expanded && "rotate-180")}
           style={{ transition: "transform var(--duration-fast) var(--ease-out-expo)" }}
         />
       </div>
       {expanded && (
-        <CardContent id={bodyId} className="flex flex-col gap-5 px-4 pt-4 pb-4">
+        <CardContent
+          id={bodyId}
+          className="bg-card/95 border-border/60 flex flex-col gap-4 border-t px-4 pt-4 pb-4"
+        >
           {clause.originalText && (
             <figure className="bg-muted/40 border-border rounded-md border border-l-2 px-3 py-2.5">
               <figcaption className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-widest uppercase">

@@ -90,13 +90,13 @@ export default function UploadPage() {
   if (showFindings) {
     return (
       <div
-        className="flex min-h-0 flex-1 flex-col"
+        className="bg-secondary flex min-h-0 flex-1 flex-col"
         data-testid="results-mode"
         style={{ animation: "fade-in var(--duration-normal) var(--ease-out-expo)" }}
       >
         <LiveRegion message={liveMessage} />
 
-        <div className="border-border flex flex-wrap items-center gap-3 border-b px-4 py-2">
+        <div className="border-border bg-background flex flex-wrap items-center gap-3 border-b px-4 py-2">
           <Button
             data-testid="start-over"
             size="sm"
