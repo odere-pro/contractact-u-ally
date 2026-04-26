@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getAnthropic } from "@/lib/anthropicClient";
-import { isAnthropicCreditError } from "@/lib/anthropicFallback";
+import { isAnthropicCreditError } from "@/lib/anthropicErrors";
 import { listContractTypes } from "./ruleLoader";
 import { classifyResponseSchema } from "./schemas";
 import type { ClassifyResult, ContractTypeEntry, Jurisdiction } from "./types";

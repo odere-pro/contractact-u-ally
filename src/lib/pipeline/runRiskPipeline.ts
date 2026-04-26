@@ -1,20 +1,9 @@
 import "server-only";
 
 import { getAnthropic } from "@/lib/anthropicClient";
-import {
-  isAnthropicCreditError,
-  isMockOnlyMode,
-  mockAnalyzeNdjsonLines,
-  mockOcrResult,
-} from "@/lib/anthropicFallback";
 import { classifyContract } from "@/lib/catalog/classifier";
 import { loadRulesForType } from "@/lib/catalog/ruleLoader";
-import {
-  clauseEventSchema,
-  MAX_CONTRACT_BYTES,
-  ocrTextEventSchema,
-  summaryEventSchema,
-} from "@/lib/catalog/schemas";
+import { clauseEventSchema, MAX_CONTRACT_BYTES, summaryEventSchema } from "@/lib/catalog/schemas";
 import type { ClassifyResult, Jurisdiction, LoadedRuleSet } from "@/lib/catalog/types";
 import { runMistralOcr } from "@/lib/mistralOcr";
 
@@ -57,43 +46,18 @@ export interface TextStreamSourceArgs {
 
 export type TextStreamFactory = (args: TextStreamSourceArgs) => AsyncIterable<string>;
 
-async function* mockAnalyzeStream(): AsyncIterable<string> {
-  for (const line of mockAnalyzeNdjsonLines()) {
-    yield line;
-  }
-}
-
 async function* defaultClaudeStream(args: TextStreamSourceArgs): AsyncIterable<string> {
-  let anthropicStream;
-  try {
-    anthropicStream = getAnthropic().messages.stream({
-      model: ANALYZE_MODEL,
-      max_tokens: ANALYZE_MAX_TOKENS,
-      system: args.systemPrompt,
-      messages: [{ role: "user", content: args.userMessage }],
-    });
-  } catch (err) {
-    if (isAnthropicCreditError(err)) {
-      console.warn("defaultClaudeStream: Anthropic credit error — streaming mocked analysis");
-      yield* mockAnalyzeStream();
-      return;
-    }
-    throw err;
-  }
+  const anthropicStream = getAnthropic().messages.stream({
+    model: ANALYZE_MODEL,
+    max_tokens: ANALYZE_MAX_TOKENS,
+    system: args.systemPrompt,
+    messages: [{ role: "user", content: args.userMessage }],
+  });
 
-  try {
-    for await (const event of anthropicStream) {
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        yield event.delta.text;
-      }
+  for await (const event of anthropicStream) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+      yield event.delta.text;
     }
-  } catch (err) {
-    if (isAnthropicCreditError(err)) {
-      console.warn("defaultClaudeStream: Anthropic credit error mid-stream — switching to mock");
-      yield* mockAnalyzeStream();
-      return;
-    }
-    throw err;
   }
 }
 
@@ -113,11 +77,6 @@ function validateAndEncodeLine(line: string): Uint8Array | null {
 
   const summary = summaryEventSchema.safeParse(obj);
   if (summary.success) return encodeSummary(summary.data);
-
-  // Mock-fallback only: lets the analyze stream replace the OCR text so
-  // mock clauses have matching snippets to highlight and scroll to.
-  const ocr = ocrTextEventSchema.safeParse(obj);
-  if (ocr.success) return encodeOcrText(ocr.data.text, ocr.data.pages);
 
   return null;
 }
@@ -148,19 +107,7 @@ class ContractTextRangeError extends Error {
  */
 export function runRiskPipeline(opts: RunRiskPipelineOptions): ReadableStream<Uint8Array> {
   const textFactory = opts.textStreamFactory ?? defaultClaudeStream;
-  // When Anthropic is unconfigured, the analyze stage will yield mock
-  // NDJSON anyway. Skip Mistral OCR in that case and substitute a
-  // synthetic contract whose text contains every mock clause snippet —
-  // otherwise the real OCR'd text won't match the mock clauses and the
-  // contract pane has no `<mark>` to scroll a card click toward.
-  const ocrFactory =
-    opts.ocrFactory ??
-    (isMockOnlyMode()
-      ? async () => {
-          const m = mockOcrResult();
-          return { ok: true as const, text: m.text, pages: m.pages, durationMs: 0 };
-        }
-      : defaultMistralOcr(opts.mistralApiKey));
+  const ocrFactory = opts.ocrFactory ?? defaultMistralOcr(opts.mistralApiKey);
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
