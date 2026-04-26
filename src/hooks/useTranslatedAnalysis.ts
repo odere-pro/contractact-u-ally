@@ -35,6 +35,12 @@ const responseSchema = z.object({
   translations: z.array(z.object({ id: z.string(), text: z.string() })),
 });
 
+// User-facing fallback copy. Hoisted so each branch reads the same string
+// and so future i18n can replace these in one place. Keep terse — they
+// land in an inline Alert next to the language switcher.
+const TRANSLATION_NETWORK_ERROR = "Translation failed. Showing original text.";
+const TRANSLATION_INVALID_ERROR = "Translation response invalid. Showing original text.";
+
 // Field-id prefixes so we can re-hydrate the API response back into the
 // per-clause shape without an out-of-band map. Field name is encoded in
 // the id — every translatable string ships round-trip with its own key.
@@ -150,6 +156,16 @@ export function useTranslatedAnalysis({
     setPending(target);
     setLanguageState(target);
 
+    // Single shared exit when anything goes wrong: surface a message,
+    // drop in-flight pending state, and re-fall-back to English so the
+    // UI never strands the user on a half-translated view.
+    const failToEnglish = (message: string): void => {
+      setError(message);
+      setPending(null);
+      setSnapshot(null);
+      setLanguageState("en");
+    };
+
     let response: Response;
     try {
       response = await fetch("/api/translate", {
@@ -157,33 +173,26 @@ export function useTranslatedAnalysis({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetLang: target, items }),
       });
-    } catch {
+    } catch (err) {
       if (requestIdRef.current !== myRequestId) return;
-      setError("Translation failed. Showing original text.");
-      setPending(null);
-      setSnapshot(null);
-      setLanguageState("en");
+      console.warn("useTranslatedAnalysis: network error during translation", err);
+      failToEnglish(TRANSLATION_NETWORK_ERROR);
       return;
     }
 
     if (requestIdRef.current !== myRequestId) return;
 
     if (!response.ok) {
-      setError("Translation failed. Showing original text.");
-      setPending(null);
-      setSnapshot(null);
-      setLanguageState("en");
+      failToEnglish(TRANSLATION_NETWORK_ERROR);
       return;
     }
 
     let raw: unknown;
     try {
       raw = await response.json();
-    } catch {
-      setError("Translation response invalid. Showing original text.");
-      setPending(null);
-      setSnapshot(null);
-      setLanguageState("en");
+    } catch (err) {
+      console.warn("useTranslatedAnalysis: invalid JSON in translate response", err);
+      failToEnglish(TRANSLATION_INVALID_ERROR);
       return;
     }
 
@@ -191,10 +200,8 @@ export function useTranslatedAnalysis({
 
     const parsed = responseSchema.safeParse(raw);
     if (!parsed.success) {
-      setError("Translation response invalid. Showing original text.");
-      setPending(null);
-      setSnapshot(null);
-      setLanguageState("en");
+      console.warn("useTranslatedAnalysis: translate response failed schema", parsed.error);
+      failToEnglish(TRANSLATION_INVALID_ERROR);
       return;
     }
 

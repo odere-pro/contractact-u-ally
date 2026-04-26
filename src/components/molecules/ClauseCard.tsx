@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ClauseEvent } from "@/lib/catalog/types";
 import type { UseVoiceReturn } from "@/hooks/useVoice";
-import { SEVERITY_LABEL, severityOf, type Severity } from "@/lib/severity";
+import { SEVERITY_LABEL, severityClassnames, severityOf } from "@/lib/severity";
 import { cn } from "@/lib/utils";
 
 interface ClauseCardProps {
@@ -20,31 +20,6 @@ interface ClauseCardProps {
 }
 
 const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED === "true";
-
-// Per-severity treatment. The whole card carries a soft tint so collapsed
-// cards read at a glance; a 4px solid bar on the left edge gives the
-// severity the same prominence the HitlBanner uses, keeping the visual
-// language consistent across surfaces.
-const SEVERITY_TINT: Record<Severity, string> = {
-  critical: "bg-[var(--color-critical-soft)]/55",
-  medium: "bg-[var(--color-medium-soft)]/55",
-  low: "bg-[var(--color-low-soft)]/55",
-  ok: "bg-[var(--color-ok-soft)]/55",
-};
-
-const SEVERITY_LEFT_BAR: Record<Severity, string> = {
-  critical: "border-l-[var(--color-critical)]",
-  medium: "border-l-[var(--color-medium)]",
-  low: "border-l-[var(--color-low)]",
-  ok: "border-l-[var(--color-ok)]",
-};
-
-const SEVERITY_BADGE: Record<Severity, string> = {
-  critical: "bg-[var(--color-critical)] text-white",
-  medium: "bg-[var(--color-medium)] text-white",
-  low: "bg-[var(--color-low)] text-[var(--color-foreground)]",
-  ok: "bg-[var(--color-ok)] text-white",
-};
 
 // Expansion is driven by `featured` — the parent owns which card is
 // active so selecting one collapses the others. The whole card and the
@@ -59,6 +34,7 @@ export function ClauseCard({
   voice,
 }: ClauseCardProps) {
   const severity = severityOf(clause);
+  const classes = severityClassnames(severity);
   const expanded = featured;
   const bodyId = `clause-card-body-${clause.id}`;
   const tinted = expanded || featured;
@@ -98,12 +74,12 @@ export function ClauseCard({
         // top and bottom edges instead of leaving a white strip.
         "relative cursor-pointer gap-0 overflow-hidden py-0 outline-none",
         "border border-l-4 border-[color:var(--color-border)]",
-        SEVERITY_LEFT_BAR[severity],
+        classes.leftBar,
         // Default bg matches the surrounding pane, so collapsed cards
         // read as a clean stack. Severity tint reveals on expand or
         // when the parent flags this card as featured (e.g. matches the
         // active selection in the contract pane).
-        tinted ? SEVERITY_TINT[severity] : "bg-card",
+        tinted ? classes.tint : "bg-card",
         "focus-visible:ring-ring/60 focus-visible:ring-2",
         featured && "shadow-md",
       )}
@@ -115,7 +91,7 @@ export function ClauseCard({
             <span
               className={cn(
                 "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase",
-                SEVERITY_BADGE[severity],
+                classes.badge,
               )}
             >
               {SEVERITY_LABEL[severity]}

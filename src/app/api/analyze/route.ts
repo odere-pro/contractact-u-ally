@@ -1,5 +1,6 @@
 import "server-only";
 
+import { jsonError } from "@/lib/apiResponse";
 import { rateLimit } from "@/lib/rateLimit";
 import { analyzeFormFieldsSchema } from "@/lib/catalog/schemas";
 import { runRiskPipeline } from "@/lib/pipeline/runRiskPipeline";
@@ -11,13 +12,6 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-function jsonError(status: number, message: string): Response {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
 
 // Single source of truth for upload-failure → HTTP response. The exhaustive
 // Record makes adding a new UploadValidationFailure member a TS error if

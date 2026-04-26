@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import type { ClauseEvent } from "@/lib/catalog/types";
 import {
+  SEVERITY_CLASSNAMES,
   SEVERITY_ORDER,
   isHighSeverity,
+  severityClassnames,
   severityOf,
   severityRank,
   sortBySeverity,
   statusToSeverity,
+  type Severity,
 } from "@/lib/severity";
 
 function clause(id: string, status: ClauseEvent["status"]): ClauseEvent {
@@ -69,5 +72,30 @@ describe("severity", () => {
 
   it("SEVERITY_ORDER is exhaustive", () => {
     expect(SEVERITY_ORDER).toHaveLength(4);
+  });
+
+  describe("severityClassnames", () => {
+    const SEVERITIES: readonly Severity[] = ["critical", "medium", "low", "ok"];
+
+    it("exposes every slice for every severity", () => {
+      for (const severity of SEVERITIES) {
+        const classes = severityClassnames(severity);
+        expect(classes.icon).toMatch(/text-/);
+        expect(classes.tint).toMatch(/bg-/);
+        expect(classes.leftBar).toMatch(/border-l-/);
+        expect(classes.badge).toMatch(/bg-/);
+        expect(classes.mark).toMatch(/bg-.+\s+text-/);
+      }
+    });
+
+    it("returns the same object reference as SEVERITY_CLASSNAMES", () => {
+      for (const severity of SEVERITIES) {
+        expect(severityClassnames(severity)).toBe(SEVERITY_CLASSNAMES[severity]);
+      }
+    });
+
+    it("uses the foreground token for low (white would fail contrast)", () => {
+      expect(SEVERITY_CLASSNAMES.low.badge).toContain("text-[var(--color-foreground)]");
+    });
   });
 });

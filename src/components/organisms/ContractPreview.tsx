@@ -6,7 +6,7 @@ import { SectionRef } from "@/components/atoms/SectionRef";
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import type { ClauseEvent } from "@/lib/catalog/types";
 import { clauseMarkId } from "@/lib/clauseDom";
-import { severityOf, sortBySeverity } from "@/lib/severity";
+import { severityClassnames, severityOf, sortBySeverity } from "@/lib/severity";
 import { cn } from "@/lib/utils";
 
 interface ContractPreviewProps {
@@ -127,10 +127,7 @@ function Highlight({ clause, active, onSelect }: HighlightProps): ReactNode {
       }}
       className={cn(
         "rounded-sm px-1 py-0.5",
-        severity === "critical" && "bg-critical-soft text-critical",
-        severity === "medium" && "bg-medium-soft text-medium",
-        severity === "low" && "bg-low-soft text-low",
-        severity === "ok" && "bg-ok-soft text-ok",
+        severityClassnames(severity).mark,
         interactive &&
           "focus-visible:ring-ring/60 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         active && "scroll-mt-12",
