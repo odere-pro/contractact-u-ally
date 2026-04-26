@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { SectionRef } from "@/components/atoms/SectionRef";
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import type { ClauseEvent } from "@/lib/catalog/types";
+import { clauseMarkId } from "@/lib/clauseDom";
 import { severityOf, sortBySeverity } from "@/lib/severity";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,7 @@ export function ContractPreview({ ocrText, clauses, activeId }: ContractPreviewP
   useEffect(() => {
     if (!activeId || !scrollRef.current) return;
     const el = scrollRef.current.querySelector<HTMLElement>(
-      `#clause-${CSS.escape(encodeURIComponent(activeId))}`,
+      `#${CSS.escape(clauseMarkId(activeId))}`,
     );
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [activeId]);
@@ -89,7 +90,7 @@ function Highlight({ clause, active }: HighlightProps): ReactNode {
   const severity = severityOf(clause);
   return (
     <mark
-      id={`clause-${encodeURIComponent(clause.id)}`}
+      id={clauseMarkId(clause.id)}
       data-severity={severity}
       style={{ transition: "box-shadow var(--duration-normal) var(--ease-out-expo)" }}
       className={cn(

@@ -165,12 +165,13 @@
   }
 }
 
-@keyframes flash-highlight {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-  30% {
-    box-shadow: 0 0 0 4px var(--color-ring);
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }

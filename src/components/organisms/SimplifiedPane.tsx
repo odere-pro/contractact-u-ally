@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import { ClauseCard } from "@/components/molecules/ClauseCard";
@@ -37,7 +38,7 @@ export function SimplifiedPane({
   onShowWhy,
 }: SimplifiedPaneProps) {
   const visible = sortBySeverity(applySeverityFilter(clauses, filter));
-  const ordered = pinActive(visible, activeId);
+  const ordered = useMemo(() => pinActive(visible, activeId), [visible, activeId]);
   const allClear =
     summary !== null && summary.illegalCount === 0 && summary.exploitativeCount === 0;
 
@@ -89,7 +90,7 @@ export function SimplifiedPane({
 // Move the active clause to position 0 if it's in the visible set.
 // Keeps the rest of the order intact so the user's mental map of
 // "critical first, then medium, …" is preserved underneath.
-function pinActive(
+export function pinActive(
   clauses: readonly ClauseEvent[],
   activeId: string | null,
 ): readonly ClauseEvent[] {

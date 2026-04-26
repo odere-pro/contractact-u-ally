@@ -28,7 +28,7 @@ export default function UploadPage() {
   const { profile, setProfile } = useProfile();
 
   const alertRef = useRef<HTMLDivElement>(null);
-  const findingsTitleRef = useRef<HTMLDivElement>(null);
+  const findingsTitleRef = useRef<HTMLHeadingElement>(null);
 
   function pickFile(next: File): void {
     setFile(next);
@@ -80,7 +80,7 @@ export default function UploadPage() {
   if (showFindings) {
     return (
       <div
-        className="flex h-[calc(100vh-3.5rem)] flex-col"
+        className="flex min-h-0 flex-1 flex-col"
         data-testid="results-mode"
         style={{ animation: "fade-in var(--duration-normal) var(--ease-out-expo)" }}
       >
@@ -97,18 +97,22 @@ export default function UploadPage() {
             <ArrowLeft aria-hidden className="size-4" />
             New contract
           </Button>
-          <div
+          {/* h1 is the page heading in results mode (the upload-mode h1
+              "Know what you signed." is gone). tabIndex=-1 lets the
+              `done` effect move focus here without making it tab-
+              reachable, so AT users land on the new content. */}
+          <h1
             ref={findingsTitleRef}
             tabIndex={-1}
-            className="flex flex-wrap items-center gap-2 outline-none"
+            className="flex flex-wrap items-center gap-2 text-base font-semibold outline-none"
           >
-            <h2 className="text-base font-semibold">Findings</h2>
-            <span className="text-muted-foreground text-sm" aria-live="polite">
+            Findings
+            <span className="text-muted-foreground text-sm font-normal" aria-live="polite">
               {analysis.summary
                 ? `${analysis.summary.totalClauses} clauses · ${analysis.summary.illegalCount} illegal`
                 : `${analysis.clauses.length} streaming…`}
             </span>
-          </div>
+          </h1>
           <span className="grow" />
           <div role="radiogroup" aria-label="Reading lens" className="flex flex-wrap gap-1.5">
             {PROFILES.map((p) => (

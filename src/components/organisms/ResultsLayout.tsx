@@ -40,11 +40,10 @@ export function ResultsLayout({ ocrText, clauses, summary, profile }: ResultsLay
   const illegalCount = summary?.illegalCount ?? 0;
 
   const handleSelectClause = useCallback((id: string): void => {
+    // Owner of scrolling is ContractPreview's effect — when its
+    // `activeId` prop changes, it scrolls the matching mark into
+    // view. We just update state here.
     setActiveId(id);
-    if (typeof document !== "undefined") {
-      const el = document.getElementById(`clause-${encodeURIComponent(id)}`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
   }, []);
 
   const handleToggleSeverity = useCallback((sev: keyof SeverityFilter): void => {
@@ -72,7 +71,7 @@ export function ResultsLayout({ ocrText, clauses, summary, profile }: ResultsLay
             onToggleSeverity={handleToggleSeverity}
           />
         </div>
-        <div className="bg-secondary/30 min-h-0 overflow-hidden">
+        <div className="bg-secondary/30 min-h-0">
           <ContractPreview ocrText={ocrText} clauses={clauses} activeId={activeId} />
         </div>
         <div className="border-border min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l">
