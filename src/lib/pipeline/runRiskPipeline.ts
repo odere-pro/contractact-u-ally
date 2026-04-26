@@ -77,7 +77,13 @@ function validateAndEncodeLine(line: string): Uint8Array | null {
   if (clause.success) return encodeClause(clause.data);
 
   const summary = summaryEventSchema.safeParse(obj);
-  if (summary.success) return encodeSummary(summary.data);
+  if (summary.success) {
+    const ok =
+      summary.data.illegalCount === 0 &&
+      summary.data.exploitativeCount === 0 &&
+      summary.data.permitConflictCount === 0;
+    return encodeSummary({ ...summary.data, ok });
+  }
 
   return null;
 }

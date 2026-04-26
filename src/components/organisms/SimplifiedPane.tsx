@@ -35,8 +35,7 @@ export function SimplifiedPane({
   voice,
 }: SimplifiedPaneProps) {
   const ordered = sortBySeverity(applySeverityFilter(clauses, filter));
-  const allClear =
-    summary !== null && summary.illegalCount === 0 && summary.exploitativeCount === 0;
+  const allClear = summary?.ok ?? false;
   const sectionRef = useRef<HTMLElement>(null);
 
   // Scroll the active card into view (without reordering) so the user

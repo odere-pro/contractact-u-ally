@@ -147,6 +147,8 @@ export interface SummaryEvent {
   readonly permitConflictCount: number;
   readonly uncheckedCount: number;
   readonly compliantCount: number;
+  /** True when no illegal, exploitative, or permit-conflict clauses were detected. */
+  readonly ok: boolean;
 }
 
 export interface OcrTextEvent {
