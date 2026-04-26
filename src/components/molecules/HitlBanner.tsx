@@ -11,7 +11,11 @@ interface HitlBannerProps {
 
 // Page-top "STOP" strip rendered when one or more clauses are illegal.
 // Severity is expressed via icon + heading + color (defence in depth).
-// Critical bg + critical-soft fg satisfy WCAG contrast in both themes.
+// Uses the same critical-soft background + critical foreground pairing
+// as the Badge `critical` variant — that pairing is the contrast
+// reference used everywhere else, so a mode that meets contrast for
+// the badge meets it here too. A `border-l-4` solid critical bar gives
+// the strip extra visual weight without relying on color contrast.
 export function HitlBanner({ illegalCount, onConnectLegalAid }: HitlBannerProps) {
   if (illegalCount === 0) return null;
   const findingWord = illegalCount === 1 ? "finding" : "findings";
@@ -19,7 +23,7 @@ export function HitlBanner({ illegalCount, onConnectLegalAid }: HitlBannerProps)
     <div
       role="alert"
       data-testid="hitl-banner"
-      className="bg-critical text-critical-soft flex flex-wrap items-center gap-3 px-4 py-2 text-sm"
+      className="bg-critical-soft text-critical border-critical flex flex-wrap items-center gap-3 border-l-4 px-4 py-2 text-sm"
     >
       <AlertTriangle aria-hidden className="size-4" />
       <strong className="font-mono uppercase">Stop</strong>
@@ -28,12 +32,7 @@ export function HitlBanner({ illegalCount, onConnectLegalAid }: HitlBannerProps)
         you sign.
       </span>
       {onConnectLegalAid && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="border-critical-soft bg-transparent"
-          onClick={onConnectLegalAid}
-        >
+        <Button size="sm" variant="outline" onClick={onConnectLegalAid}>
           Connect me to legal aid →
         </Button>
       )}

@@ -15,15 +15,43 @@ interface TermsGateProps {
 // behind the modal so post-acceptance there's no extra paint.
 export function TermsGate({ children }: TermsGateProps) {
   const { accepted, hydrated, accept } = useTerms();
-  // Derive open state directly — no effect needed. `dismissed` lets
-  // the user close the gate locally without revoking the persisted
-  // acceptance.
-  const [dismissed, setDismissed] = useState(false);
-  const open = hydrated && !accepted && !dismissed;
+  const [declined, setDeclined] = useState(false);
+  // Derive open state directly — no effect needed. We deliberately
+  // never auto-show before hydration to avoid a flash-of-modal on the
+  // first paint; once the storage read resolves the gate either is or
+  // isn't shown.
+  const open = hydrated && !accepted && !declined;
+
+  function handleDecline(): void {
+    // No external redirect — the user explicitly declined the terms.
+    // We hide the modal and surface a small notice via the declined
+    // branch below; the rest of the app remains visually present but
+    // every action that uploads a document will re-trigger the gate.
+    setDeclined(true);
+  }
 
   return (
     <>
-      {children}
+      {/* When the storage read is in flight, blank the body so we
+          neither flash an unblocked app (declined-but-not-yet-shown)
+          nor flash an open modal that immediately closes for a
+          previously-accepted user. */}
+      <div aria-hidden={!hydrated} className={hydrated ? undefined : "opacity-0"}>
+        {children}
+      </div>
+      {hydrated && declined && !accepted && (
+        <div role="status" className="bg-secondary text-foreground p-3 text-center text-sm">
+          You declined the terms. Uploads are disabled until you accept them.{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={() => setDeclined(false)}
+            data-testid="terms-reopen"
+          >
+            Re-open terms
+          </button>
+        </div>
+      )}
       <Dialog open={open}>
         <DialogContent
           title="Terms & Conditions"
@@ -39,19 +67,14 @@ export function TermsGate({ children }: TermsGateProps) {
             <li>Document text is sent to a third-party LLM for clause analysis.</li>
           </ul>
           <div className="flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                window.location.href = "https://en.wikipedia.org/wiki/Employment_contract";
-              }}
-            >
+            <Button variant="ghost" onClick={handleDecline}>
               Decline
             </Button>
             <Button
               data-testid="terms-accept"
               onClick={() => {
                 accept();
-                setDismissed(true);
+                setDeclined(false);
               }}
             >
               Accept

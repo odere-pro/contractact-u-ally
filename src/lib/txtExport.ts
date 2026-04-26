@@ -52,10 +52,14 @@ export function buildTxtReport(args: BuildArgs): string {
 }
 
 function quote(text: string): string {
-  // Strip newlines so the export stays one-line-per-original-clause;
-  // the analysis stage already returns a verbatim snippet, not the
-  // full PDF text.
-  return `"${text.replace(/\s+/g, " ").trim()}"`;
+  // Preserve paragraph breaks so the export keeps any intentional
+  // structure in a clause snippet, but collapse runs of inline
+  // whitespace (PDFs often contain stray double-spaces from OCR).
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((p) => p.replace(/\s+/g, " ").trim())
+    .filter((p) => p.length > 0);
+  return `"${paragraphs.join("\n\n")}"`;
 }
 
 export function reportFilename(generatedAt: Date): string {

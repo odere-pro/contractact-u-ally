@@ -29,7 +29,6 @@ export function WhyDrawer({ clause, profile, open, onOpenChange }: WhyDrawerProp
               <SectionRef id={clause.id} /> · {clause.title}
             </span>
           }
-          aria-labelledby={`why-clause-${encodeURIComponent(clause.id)}`}
         >
           <div className="flex items-center gap-2">
             <SeverityBadge severity={severityOf(clause)} />

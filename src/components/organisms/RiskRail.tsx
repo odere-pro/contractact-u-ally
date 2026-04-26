@@ -82,8 +82,13 @@ export function RiskRail({
               Filter
             </h3>
             {SEVERITY_ORDER.map((sev) => (
-              <label key={sev} className="flex items-center gap-2 text-sm">
+              <label
+                key={sev}
+                htmlFor={`severity-filter-${sev}`}
+                className="flex items-center gap-2 text-sm"
+              >
                 <input
+                  id={`severity-filter-${sev}`}
                   type="checkbox"
                   checked={filter[sev]}
                   onChange={() => onToggleSeverity(sev)}

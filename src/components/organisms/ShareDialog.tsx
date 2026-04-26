@@ -27,8 +27,14 @@ export function ShareDialog({ open, onOpenChange, summary, clauses, profile }: S
     const link = document.createElement("a");
     link.href = url;
     link.download = reportFilename(generatedAt);
+    link.rel = "noopener";
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    // Defer the revoke so Firefox/Safari have time to start the download
+    // before the URL becomes invalid. 60s is generous; the browser stops
+    // needing the URL the moment the network request fires.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
     onOpenChange(false);
   };
 

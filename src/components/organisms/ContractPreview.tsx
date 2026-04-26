@@ -28,10 +28,17 @@ export function ContractPreview({ ocrText, clauses, activeId }: ContractPreviewP
       className="bg-secondary/30 max-h-[640px] overflow-y-auto p-6 text-sm leading-relaxed"
     >
       {segments.map((segment, idx) =>
+        // Stable key: highlights key by clause id (unique by domain
+        // contract); text segments key by their position. Keeps DOM
+        // identity stable while clauses stream in.
         segment.kind === "text" ? (
-          <span key={idx}>{segment.text}</span>
+          <span key={`t-${idx}`}>{segment.text}</span>
         ) : (
-          <Highlight key={idx} clause={segment.clause} active={activeId === segment.clause.id} />
+          <Highlight
+            key={`h-${segment.clause.id}`}
+            clause={segment.clause}
+            active={activeId === segment.clause.id}
+          />
         ),
       )}
       {segments.length === 1 && (
@@ -70,19 +77,26 @@ function Highlight({ clause, active }: HighlightProps): ReactNode {
   );
 }
 
-type Segment = { kind: "text"; text: string } | { kind: "highlight"; clause: ClauseEvent };
+export type Segment = { kind: "text"; text: string } | { kind: "highlight"; clause: ClauseEvent };
 
 // Greedy match: for every clause whose snippet appears verbatim in
-// the OCR text, replace the first occurrence with a highlight. Ranges
-// are sorted by source-text position so we can splice in one pass.
-function splitWithHighlights(text: string, clauses: readonly ClauseEvent[]): readonly Segment[] {
+// the OCR text, replace the first occurrence with a highlight.
+// Severity-sorted iteration means critical highlights win position
+// over lower-severity overlaps. Touching ranges (idx === r.end) are
+// allowed: line 92's `range.start > cursor` guard prevents the empty
+// text segment that would otherwise appear between adjacent marks.
+export function splitWithHighlights(
+  text: string,
+  clauses: readonly ClauseEvent[],
+): readonly Segment[] {
   const ranges: { start: number; end: number; clause: ClauseEvent }[] = [];
   for (const clause of sortBySeverity(clauses)) {
     if (!clause.originalText) continue;
     const idx = text.indexOf(clause.originalText);
     if (idx < 0) continue;
-    if (ranges.some((r) => idx < r.end && idx + clause.originalText.length > r.start)) continue;
-    ranges.push({ start: idx, end: idx + clause.originalText.length, clause });
+    const end = idx + clause.originalText.length;
+    if (ranges.some((r) => idx < r.end && end > r.start)) continue;
+    ranges.push({ start: idx, end, clause });
   }
   ranges.sort((a, b) => a.start - b.start);
 

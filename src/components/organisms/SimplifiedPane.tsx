@@ -4,11 +4,14 @@ import { CheckCircle2 } from "lucide-react";
 
 import { ClauseCard } from "@/components/molecules/ClauseCard";
 import { Card, CardContent } from "@/components/ui/card";
-import { applySeverityFilter, type SeverityFilter } from "@/lib/clauseFilters";
+import {
+  ALL_SEVERITIES_SHOWN,
+  applySeverityFilter,
+  highestSeverity,
+  type SeverityFilter,
+} from "@/lib/clauseFilters";
 import { PROFILE_LABEL, PROFILE_TAGLINE, type Profile } from "@/lib/profileCopy";
-import { highestSeverity } from "@/lib/clauseFilters";
 import { sortBySeverity } from "@/lib/severity";
-import { ALL_SEVERITIES_SHOWN } from "@/lib/clauseFilters";
 import type { ClauseEvent, SummaryEvent } from "@/lib/catalog/types";
 
 interface SimplifiedPaneProps {
