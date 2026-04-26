@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, type KeyboardEvent, type MouseEvent } from "react";
+import { ArrowLeftToLine, ChevronDown } from "lucide-react";
 
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
 import { Button } from "@/components/ui/button";
@@ -45,15 +45,17 @@ const SEVERITY_BADGE: Record<Severity, string> = {
 // Each card owns its own expand/collapse state so toggling one never
 // affects siblings. The whole card is the click / keyboard target so
 // users don't have to aim at a small chevron; the chevron + soft tint
-// are the visual affordances.
+// are the visual affordances. Card click ONLY toggles expansion; a
+// dedicated "Show in contract" button navigates the contract pane so
+// the two intents stay separable.
 export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: ClauseCardProps) {
   const severity = severityOf(clause);
   const [expanded, setExpanded] = useState(false);
   const bodyId = `clause-card-body-${clause.id}`;
+  const tinted = expanded || featured;
 
   const handleToggle = () => {
     setExpanded((v) => !v);
-    onSelect?.(clause.id);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -61,6 +63,11 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
       event.preventDefault();
       handleToggle();
     }
+  };
+
+  const handleGoToClause = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onSelect?.(clause.id);
   };
 
   return (
@@ -83,11 +90,11 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
         "relative cursor-pointer gap-0 overflow-hidden py-0 outline-none",
         "border border-l-4 border-[color:var(--color-border)]",
         SEVERITY_LEFT_BAR[severity],
-        // Default bg matches the expanded body and the surrounding pane,
-        // so collapsed cards read as a clean stack. Severity color
-        // appears only when the card is active/featured — a single soft
-        // tint reveal with a fade transition.
-        featured ? SEVERITY_TINT[severity] : "bg-card",
+        // Default bg matches the surrounding pane, so collapsed cards
+        // read as a clean stack. Severity tint reveals on expand or
+        // when the parent flags this card as featured (e.g. matches the
+        // active selection in the contract pane).
+        tinted ? SEVERITY_TINT[severity] : "bg-card",
         "focus-visible:ring-ring/60 focus-visible:ring-2",
         featured && "shadow-md",
       )}
@@ -112,6 +119,20 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
             {clause.title}
           </h3>
         </div>
+        {onSelect && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            data-testid={`clause-card-goto-${clause.id}`}
+            aria-label={`Show clause ${clause.id} in the contract`}
+            onClick={handleGoToClause}
+            className="mt-0.5 h-8 shrink-0 gap-1.5 px-2.5 text-xs"
+          >
+            <ArrowLeftToLine aria-hidden className="size-3.5" />
+            <span className="hidden sm:inline">Show in contract</span>
+          </Button>
+        )}
         <ChevronDown
           aria-hidden
           className={cn("text-foreground/60 mt-1 size-5 shrink-0", expanded && "rotate-180")}
@@ -121,7 +142,7 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
       {expanded && (
         <CardContent
           id={bodyId}
-          className="bg-card border-border/60 flex flex-col gap-4 border-t px-4 pt-4 pb-4"
+          className="border-border/60 flex flex-col gap-4 border-t px-4 pt-4 pb-4"
         >
           {clause.originalText && (
             <figure className="bg-muted/40 border-border rounded-md border border-l-2 px-3 py-2.5">
@@ -147,28 +168,29 @@ export function ClauseCard({ clause, featured = false, onSelect, onShowWhy }: Cl
               <p className="text-foreground text-[0.9375rem] leading-relaxed">{clause.action}</p>
             </section>
           )}
-          {(clause.citation || onShowWhy) && (
+          {onShowWhy && (
             <div className="flex flex-wrap items-center gap-2">
-              {onShowWhy && (
-                <Button
-                  size="default"
-                  variant="outline"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onShowWhy(clause);
-                  }}
-                >
-                  Why is this a risk?
-                </Button>
-              )}
-              {clause.citation && (
-                <span
-                  aria-label={`Reference: ${clause.citation.article}`}
-                  className="border-border text-muted-foreground inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-xs"
-                >
-                  {clause.citation.article}
-                </span>
-              )}
+              <Button
+                size="default"
+                variant="outline"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onShowWhy(clause);
+                }}
+              >
+                Why is this a risk?
+              </Button>
+              <Button
+                size="default"
+                variant="outline"
+                data-testid={`clause-card-ask-${clause.id}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onShowWhy(clause);
+                }}
+              >
+                Ask a question
+              </Button>
             </div>
           )}
         </CardContent>
