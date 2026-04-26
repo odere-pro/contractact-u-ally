@@ -105,21 +105,15 @@ export default function UploadPage() {
             <ArrowLeft aria-hidden className="size-4" />
             New contract
           </Button>
-          {/* h1 is the page heading in results mode (the upload-mode h1
-              "Know what you signed." is gone). tabIndex=-1 lets the
-              `done` effect move focus here without making it tab-
-              reachable, so AT users land on the new content. */}
-          <h1
-            ref={findingsTitleRef}
-            tabIndex={-1}
-            className="flex flex-wrap items-center gap-2 text-base font-semibold outline-none"
-          >
-            Findings
-            <span className="text-muted-foreground text-sm font-normal" aria-live="polite">
-              {analysis.summary
-                ? `${analysis.summary.totalClauses} clauses · ${analysis.summary.illegalCount} illegal`
-                : `${analysis.clauses.length} streaming…`}
-            </span>
+          {/* h1 is sr-only — kept for landmark semantics + focus
+              management on `done`, but visually removed from the toolbar
+              to reduce chrome. tabIndex=-1 lets the effect move focus
+              here without making it tab-reachable. */}
+          <h1 ref={findingsTitleRef} tabIndex={-1} className="sr-only outline-none">
+            Findings.{" "}
+            {analysis.summary
+              ? `${analysis.summary.totalClauses} clauses, ${analysis.summary.illegalCount} illegal.`
+              : `${analysis.clauses.length} streaming.`}
           </h1>
           <span className="grow" />
           {/* Static audience indicator — the product currently ships

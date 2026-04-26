@@ -42,13 +42,6 @@ export function ContractPreview({ ocrText, clauses, activeId }: ContractPreviewP
       aria-label="Contract text with risk highlights"
       className="flex h-full min-h-0 flex-col"
     >
-      <header className="border-border bg-card flex items-center gap-3 border-b px-4 py-2 text-xs">
-        <span className="text-muted-foreground">Contract</span>
-        <span className="grow" />
-        <span className="text-muted-foreground tabular-nums">
-          {clauses.length > 0 ? `${clauses.length} clauses` : "—"}
-        </span>
-      </header>
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-6 lg:px-10 lg:py-8">
         <article
           className={cn(
