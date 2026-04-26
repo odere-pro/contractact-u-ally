@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { ClauseEvent, ClauseStatus } from "@/lib/catalog/types";
 import {
-  ALL_SEVERITIES_SHOWN,
-  HIDE_OK,
+  DEFAULT_FILTER,
   applySeverityFilter,
-  countBySeverity,
   groupBySeverity,
   highestSeverity,
 } from "@/lib/clauseFilters";
@@ -33,12 +31,12 @@ describe("clauseFilters", () => {
     c("§5", "compliant"),
   ];
 
-  it("applySeverityFilter drops disabled severities", () => {
-    expect(applySeverityFilter(clauses, HIDE_OK).map((x) => x.id)).toEqual(["§1", "§2", "§3"]);
-  });
-
-  it("ALL_SEVERITIES_SHOWN passes everything through", () => {
-    expect(applySeverityFilter(clauses, ALL_SEVERITIES_SHOWN)).toHaveLength(5);
+  it("DEFAULT_FILTER drops OK clauses but keeps everything else", () => {
+    expect(applySeverityFilter(clauses, DEFAULT_FILTER).map((x) => x.id)).toEqual([
+      "§1",
+      "§2",
+      "§3",
+    ]);
   });
 
   it("groupBySeverity buckets by severity", () => {
@@ -47,10 +45,6 @@ describe("clauseFilters", () => {
     expect(groups.medium.map((x) => x.id)).toEqual(["§2"]);
     expect(groups.low.map((x) => x.id)).toEqual(["§3"]);
     expect(groups.ok.map((x) => x.id)).toEqual(["§4", "§5"]);
-  });
-
-  it("countBySeverity totals each bucket", () => {
-    expect(countBySeverity(clauses)).toEqual({ critical: 1, medium: 1, low: 1, ok: 2 });
   });
 
   it("highestSeverity returns null when empty, else the worst present", () => {

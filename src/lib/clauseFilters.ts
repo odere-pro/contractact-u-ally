@@ -8,14 +8,9 @@ import { SEVERITY_ORDER, severityOf } from "@/lib/severity";
 
 export type SeverityFilter = Record<Severity, boolean>;
 
-export const ALL_SEVERITIES_SHOWN: SeverityFilter = {
-  critical: true,
-  medium: true,
-  low: true,
-  ok: true,
-};
-
-export const HIDE_OK: SeverityFilter = {
+// OK clauses are always hidden — they're noise in a "what to fix" UI.
+// Critical/medium/low default visible; the rail can toggle them.
+export const DEFAULT_FILTER: SeverityFilter = {
   critical: true,
   medium: true,
   low: true,
@@ -42,12 +37,6 @@ export function groupBySeverity(
     groups[severityOf(clause)].push(clause);
   }
   return groups;
-}
-
-export function countBySeverity(clauses: readonly ClauseEvent[]): Record<Severity, number> {
-  const counts: Record<Severity, number> = { critical: 0, medium: 0, low: 0, ok: 0 };
-  for (const clause of clauses) counts[severityOf(clause)]++;
-  return counts;
 }
 
 export function highestSeverity(clauses: readonly ClauseEvent[]): Severity | null {

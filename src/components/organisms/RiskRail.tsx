@@ -3,14 +3,13 @@
 import { Separator } from "@/components/ui/separator";
 import { RiskJumpRow } from "@/components/molecules/RiskJumpRow";
 import { SeverityIcon } from "@/components/atoms/SeverityIcon";
-import {
-  ALL_SEVERITIES_SHOWN,
-  applySeverityFilter,
-  countBySeverity,
-  type SeverityFilter,
-} from "@/lib/clauseFilters";
-import { SEVERITY_LABEL, SEVERITY_ORDER, severityOf, sortBySeverity } from "@/lib/severity";
+import { DEFAULT_FILTER, applySeverityFilter, type SeverityFilter } from "@/lib/clauseFilters";
+import { SEVERITY_LABEL, severityOf, sortBySeverity, type Severity } from "@/lib/severity";
 import type { ClauseEvent } from "@/lib/catalog/types";
+
+// Severities the rail surfaces. OK is intentionally excluded — compliant
+// clauses are noise in a "what to fix" UI.
+const VISIBLE_SEVERITIES: readonly Severity[] = ["critical", "medium", "low"];
 
 interface RiskRailProps {
   readonly clauses: readonly ClauseEvent[];
@@ -20,39 +19,20 @@ interface RiskRailProps {
   readonly onToggleSeverity?: (severity: keyof SeverityFilter) => void;
 }
 
-// Left pane: severity counts + jump list + per-severity filter.
-// Counts use unfiltered clauses so the filter UI can show "(0 of 12)"
-// patterns without extra plumbing.
+// Left pane: jump list + per-severity filter. The summary count panel
+// was removed — counts are visible inline in the jump list and add
+// noise above the actual navigation.
 export function RiskRail({
   clauses,
   activeId,
-  filter = ALL_SEVERITIES_SHOWN,
+  filter = DEFAULT_FILTER,
   onSelectClause,
   onToggleSeverity,
 }: RiskRailProps) {
-  const counts = countBySeverity(clauses);
   const visibleSorted = sortBySeverity(applySeverityFilter(clauses, filter));
 
   return (
     <aside data-testid="risk-rail" aria-label="Findings index" className="flex flex-col gap-5 p-4">
-      <section className="flex flex-col gap-2">
-        <h3 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-          Summary
-        </h3>
-        <ul className="flex flex-col gap-1">
-          {SEVERITY_ORDER.map((sev) => (
-            <li
-              key={sev}
-              className="bg-secondary/40 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm"
-            >
-              <SeverityIcon severity={sev} className="size-3.5" />
-              <span>{SEVERITY_LABEL[sev]}</span>
-              <span className="ml-auto font-semibold">{counts[sev]}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <Separator />
       <section className="flex flex-col gap-1.5">
         <h3 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
           Jump to
@@ -81,7 +61,7 @@ export function RiskRail({
             <h3 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
               Filter
             </h3>
-            {SEVERITY_ORDER.map((sev) => (
+            {VISIBLE_SEVERITIES.map((sev) => (
               <label
                 key={sev}
                 htmlFor={`severity-filter-${sev}`}
@@ -93,6 +73,7 @@ export function RiskRail({
                   checked={filter[sev]}
                   onChange={() => onToggleSeverity(sev)}
                 />
+                <SeverityIcon severity={sev} className="size-3.5" />
                 {SEVERITY_LABEL[sev]}
               </label>
             ))}
