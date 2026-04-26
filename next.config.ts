@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
-// Permissions-Policy: deny camera, microphone, geolocation by default.
-const permissionsPolicy = ["camera=()", "microphone=()", "geolocation=()"].join(", ");
+// Permissions-Policy: deny camera + geolocation; allow microphone on the
+// same origin so the in-app voice Q&A flow can call getUserMedia.
+const permissionsPolicy = ["camera=()", "microphone=(self)", "geolocation=()"].join(", ");
 
 // CSP — restrictive baseline. 'unsafe-eval' is only allowed in dev
 // (Turbopack HMR). 'unsafe-inline' on script remains until we wire nonce

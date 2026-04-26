@@ -164,13 +164,19 @@ export function useVoice({ jurisdiction, clauses }: UseVoiceOptions): UseVoiceRe
       };
       recorder.start();
       setActiveClauseId(clauseId ?? null);
-      // Clear any prior answer so the new session starts clean.
       setTranscript("");
       setAnswer("");
       setVoiceState("listening");
-    } catch {
-      setVoiceState("idle");
-      setActiveClauseId(null);
+    } catch (err) {
+      // Surface the failure instead of returning to idle silently — the
+      // user clicked the mic and deserves to know it didn't open. Browser
+      // throws NotAllowedError on permission denial / Permissions-Policy
+      // block, NotFoundError when no input device is available.
+      console.error("startListening: getUserMedia failed", err);
+      setActiveClauseId(clauseId ?? null);
+      setTranscript("");
+      setAnswer("Microphone unavailable. Check browser permissions and try again.");
+      setVoiceState("error");
     }
   }, []);
 
