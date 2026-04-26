@@ -42,8 +42,11 @@ export function isHighSeverity(severity: Severity): boolean {
   return severity === "critical" || severity === "medium";
 }
 
+// User-facing labels. The `critical` severity bucket covers `illegal` and
+// `permit_conflict` statuses; we surface it as "Illegal" everywhere so the
+// worker sees one consistent word for "this breaks the law".
 export const SEVERITY_LABEL: Record<Severity, string> = {
-  critical: "Critical",
+  critical: "Illegal",
   medium: "Medium",
   low: "Low",
   ok: "OK",
